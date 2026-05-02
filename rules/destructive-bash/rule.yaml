@@ -1,0 +1,23 @@
+schema_version: 1
+id: rogue.destructive-bash
+name: Block destructive shell commands
+description: |
+  Denies bash tool calls that match well-known destructive patterns:
+  recursive force-removal, SQL DROP TABLE, dd over /dev/sd*, mkfs against
+  block devices, and shell-piped curl into bash. The agent gets a clear
+  explanation it can surface to the user.
+severity: high
+tags:
+  - bash
+  - destructive
+  - filesystem
+authors:
+  - github: openagentlock
+license: Apache-2.0
+compatible_agentlock: ">=0.1.0"
+gate:
+  when:
+    tool: Bash
+    command_regex: '(rm\s+-rf?\s+/|DROP\s+TABLE|dd\s+if=.*of=/dev/sd|mkfs\.|curl\s+[^|]*\|\s*(ba)?sh)'
+  on_hit: deny
+  require_strong: false

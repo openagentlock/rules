@@ -1,0 +1,29 @@
+name: ci
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - name: Install tools deps
+        working-directory: tools
+        run: bun install --frozen-lockfile || bun install
+      - name: Validate rules against schema
+        working-directory: tools
+        run: bun run validate
+      - name: Build index and check it is up to date
+        working-directory: tools
+        run: |
+          bun run build-index
+          if ! git diff --quiet -- ../site/data/index.json; then
+            echo "::error::site/data/index.json is stale. Run 'bun run build-index' in tools/ and commit the result."
+            git --no-pager diff -- ../site/data/index.json
+            exit 1
+          fi

@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>OpenAgentLock Rules Registry</title>
+    <meta
+      name="description"
+      content="Searchable registry of OpenAgentLock policy rules. Click a rule to copy the install command for your local OpenAgentLock daemon."
+    />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <header>
+      <div class="container">
+        <h1>OpenAgentLock <span class="accent">Rules</span></h1>
+        <p class="tagline">
+          Community-maintained policy rules for the
+          <a href="https://github.com/openagentlock/OpenAgentLock">OpenAgentLock</a>
+          firewall. Search, copy, install.
+        </p>
+        <nav class="header-nav">
+          <a href="https://github.com/openagentlock/rules" rel="noopener">GitHub repo</a>
+          <a href="#using">Using upstream</a>
+          <a href="#self-host">Run your own registry</a>
+          <a href="#contribute">Contribute a rule</a>
+        </nav>
+      </div>
+    </header>
+
+    <main class="container">
+      <section class="search-bar">
+        <input
+          id="q"
+          type="search"
+          placeholder="Search rules by name, tag, or description…"
+          autocomplete="off"
+          spellcheck="false"
+          autofocus
+        />
+        <div class="filters">
+          <label
+            ><input type="checkbox" data-severity="critical" checked /> critical</label
+          >
+          <label
+            ><input type="checkbox" data-severity="high" checked /> high</label
+          >
+          <label
+            ><input type="checkbox" data-severity="medium" checked /> medium</label
+          >
+          <label
+            ><input type="checkbox" data-severity="low" checked /> low</label
+          >
+          <label
+            ><input type="checkbox" data-severity="info" checked /> info</label
+          >
+        </div>
+      </section>
+
+      <section id="results"></section>
+
+      <section id="using" class="explainer">
+        <h2>Using the upstream registry</h2>
+        <p>
+          The default registry is <code>openagentlock/rules</code> — this site.
+          Once you have OpenAgentLock running locally, you can install any rule
+          you find here:
+        </p>
+        <pre><code># list everything available in the upstream registry
+agentlock rules search
+
+# install a specific rule by id
+agentlock rules install rogue.destructive-bash
+
+# sync periodically to pick up new + updated rules
+agentlock rules sync</code></pre>
+        <p>
+          The CLI verifies the rule against
+          <a href="https://github.com/openagentlock/rules/blob/main/schema/rule.schema.json"
+            ><code>rule.schema.json</code></a
+          >
+          before merging it into your local policy. Verdicts run through the
+          same gate evaluator as built-in rules — there is no separate code
+          path.
+        </p>
+      </section>
+
+      <section id="self-host" class="explainer">
+        <h2>Run your own registry</h2>
+        <p>
+          Any git repo with the same layout works. Use this for company-internal
+          rules you do not want to upstream:
+        </p>
+        <ol>
+          <li>
+            Fork or copy this repo's structure: <code>rules/&lt;id&gt;/</code>,
+            <code>schema/</code>, <code>tools/</code>, <code>site/</code>.
+          </li>
+          <li>
+            Drop your rule directories in <code>rules/</code> and update
+            <code>site/data/index.json</code> via <code>bun run build-index</code>.
+          </li>
+          <li>
+            Push to any git host — GitHub, GitLab, self-hosted Gitea, whatever.
+            The CLI just clones a URL.
+          </li>
+          <li>
+            On the OpenAgentLock host, register it as an additional registry:
+          </li>
+        </ol>
+        <pre><code># register an extra registry on top of the upstream default
+agentlock rules add https://github.com/your-org/your-rules.git
+
+# rules are merged at sync time; ids must be unique within a registry
+agentlock rules sync
+
+# list registries that the daemon currently pulls from
+agentlock rules sources</code></pre>
+        <p>
+          Multiple registries are supported. The upstream
+          <code>openagentlock/rules</code> is included by default but can be
+          removed with <code>agentlock rules remove openagentlock/rules</code>
+          if your environment has policy reasons to bind only to a private
+          source.
+        </p>
+      </section>
+
+      <section id="contribute" class="explainer">
+        <h2>Contribute a rule</h2>
+        <p>
+          Open a PR against
+          <a href="https://github.com/openagentlock/rules">openagentlock/rules</a>:
+        </p>
+        <ol>
+          <li>Fork the repo.</li>
+          <li>
+            Copy <code>rules/destructive-bash/</code> as a template; keep one
+            rule per directory.
+          </li>
+          <li>
+            Run <code>bun run validate</code> and <code>bun run build-index</code>
+            locally before pushing.
+          </li>
+          <li>Open the PR; CI will re-run both.</li>
+        </ol>
+        <p class="muted">
+          v1 ships unsigned. Per-rule author signatures and end-to-end install
+          verification are tracked in the GitHub repo issues.
+        </p>
+      </section>
+    </main>
+
+    <footer>
+      <div class="container">
+        <span>Apache-2.0</span>
+        <span>·</span>
+        <a href="https://github.com/openagentlock/rules">openagentlock/rules</a>
+        <span>·</span>
+        <span id="generated-at">loading…</span>
+      </div>
+    </footer>
+
+    <script src="app.js" type="module"></script>
+  </body>
+</html>

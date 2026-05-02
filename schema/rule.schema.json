@@ -1,0 +1,81 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://openagentlock.github.io/rules/schema/rule.schema.json",
+  "title": "OpenAgentLock community rule",
+  "type": "object",
+  "required": ["schema_version", "id", "name", "description", "severity", "gate"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "type": "integer",
+      "const": 1
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+([._-][a-z0-9]+)*$",
+      "description": "Lowercase, dot-separated rule id, e.g. 'rogue.destructive-bash'."
+    },
+    "name": {
+      "type": "string",
+      "minLength": 3,
+      "maxLength": 100
+    },
+    "description": {
+      "type": "string",
+      "minLength": 10
+    },
+    "severity": {
+      "type": "string",
+      "enum": ["info", "low", "medium", "high", "critical"]
+    },
+    "tags": {
+      "type": "array",
+      "items": { "type": "string" },
+      "uniqueItems": true
+    },
+    "authors": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["github"],
+        "additionalProperties": false,
+        "properties": {
+          "name": { "type": "string" },
+          "github": { "type": "string", "pattern": "^[a-zA-Z0-9-]+$" }
+        }
+      }
+    },
+    "license": {
+      "type": "string",
+      "default": "Apache-2.0"
+    },
+    "compatible_agentlock": {
+      "type": "string",
+      "description": "semver range of OpenAgentLock daemon versions this rule has been tested against, e.g. '>=0.1.0'."
+    },
+    "gate": {
+      "type": "object",
+      "required": ["on_hit"],
+      "additionalProperties": false,
+      "properties": {
+        "when": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "Match conditions. Mirrors the OpenAgentLock policy 'when' block."
+        },
+        "on_hit": {
+          "type": "string",
+          "enum": ["allow", "deny", "monitor", "warn"]
+        },
+        "require_strong": {
+          "type": "boolean",
+          "default": false
+        },
+        "evaluate": {
+          "type": "array",
+          "items": { "type": "object" }
+        }
+      }
+    }
+  }
+}
