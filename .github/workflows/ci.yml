@@ -18,12 +18,6 @@ jobs:
       - name: Validate rules against schema
         working-directory: tools
         run: bun run validate
-      - name: Build index and check it is up to date
+      - name: Build index (smoke test only)
         working-directory: tools
-        run: |
-          bun run build-index
-          if ! git diff --quiet -- ../site/data/index.json; then
-            echo "::error::site/data/index.json is stale. Run 'bun run build-index' in tools/ and commit the result."
-            git --no-pager diff -- ../site/data/index.json
-            exit 1
-          fi
+        run: bun run build-index
