@@ -1,36 +1,75 @@
-// Vanilla JS — fetch the static index, render rule cards, wire search +
-// the copy-install button. No framework, no bundler. The page must
-// render correctly on plain GitHub Pages with no build step.
+// Vanilla JS — fetch the static index, render rule cards, wire search,
+// theme toggle, sort, and pagination. No framework, no bundler.
 //
 // Rendering uses createElement + textContent throughout so user-supplied
 // rule data (names, descriptions, tags) never reaches an HTML parser.
 // Treat every field on a rule as untrusted — the registry is a public
 // PR target.
 
-// The CLI auto-registers `openagentlock-rules` as the upstream id, so the
-// install command can stay short — no need to namespace `<registry>:<id>`
-// for the default catalog.
 const INSTALL_CMD = (id) => `agentlock rules install ${id}`;
+const SEVERITY_ORDER = { critical: 0, high: 1, medium: 2, low: 3, info: 4 };
+const THEME_KEY = "oal-rules-theme";
 
 const $q = document.getElementById("q");
 const $results = document.getElementById("results");
+const $pagination = document.getElementById("pagination");
 const $generated = document.getElementById("generated-at");
 const $count = document.getElementById("count");
 const $metaCount = document.getElementById("meta-count");
+const $sort = document.getElementById("sort");
+const $pageSize = document.getElementById("page-size");
+const $themeToggle = document.getElementById("theme-toggle");
 const $filters = Array.from(document.querySelectorAll('.filters input[type="checkbox"]'));
 
 let RULES = [];
+let page = 1;
+
+// ---------- theme ----------
+
+function readTheme() {
+  try {
+    return localStorage.getItem(THEME_KEY) ?? "system";
+  } catch {
+    return "system";
+  }
+}
+function applyTheme(theme) {
+  if (theme === "light" || theme === "dark") {
+    document.documentElement.setAttribute("data-theme", theme);
+  } else {
+    document.documentElement.removeAttribute("data-theme");
+  }
+  if ($themeToggle) {
+    for (const btn of $themeToggle.querySelectorAll("button[data-theme]")) {
+      btn.setAttribute("aria-pressed", btn.dataset.theme === theme ? "true" : "false");
+    }
+  }
+}
+function setTheme(theme) {
+  try {
+    if (theme === "system") localStorage.removeItem(THEME_KEY);
+    else localStorage.setItem(THEME_KEY, theme);
+  } catch { /* ignore — private mode etc. */ }
+  applyTheme(theme);
+}
+applyTheme(readTheme());
+if ($themeToggle) {
+  $themeToggle.addEventListener("click", (e) => {
+    const target = e.target;
+    if (target instanceof HTMLButtonElement && target.dataset.theme) {
+      setTheme(target.dataset.theme);
+    }
+  });
+}
+
+// ---------- helpers ----------
 
 function severityClass(sev) {
-  return ["critical", "high", "medium", "low", "info"].includes(sev)
-    ? sev
-    : "info";
+  return ["critical", "high", "medium", "low", "info"].includes(sev) ? sev : "info";
 }
 
 function activeSeverities() {
-  return new Set(
-    $filters.filter((c) => c.checked).map((c) => c.dataset.severity),
-  );
+  return new Set($filters.filter((c) => c.checked).map((c) => c.dataset.severity));
 }
 
 function matches(rule, query, sevSet) {
@@ -44,6 +83,18 @@ function matches(rule, query, sevSet) {
     (rule.tags || []).some((t) => t.toLowerCase().includes(q)) ||
     (rule.readme_excerpt || "").toLowerCase().includes(q)
   );
+}
+
+function sortBy(sortKey) {
+  return (a, b) => {
+    if (sortKey === "severity") {
+      const da = SEVERITY_ORDER[a.severity] ?? 99;
+      const db = SEVERITY_ORDER[b.severity] ?? 99;
+      if (da !== db) return da - db;
+    }
+    if (sortKey === "name") return a.name.localeCompare(b.name);
+    return a.id.localeCompare(b.id);
+  };
 }
 
 function el(tag, attrs, children) {
@@ -78,10 +129,7 @@ function ruleCard(r) {
   meta.appendChild(el("span", null, [`action: `, el("code", null, r.action)]));
   if (r.compatible_agentlock) {
     meta.appendChild(
-      el("span", null, [
-        "agentlock ",
-        el("code", null, r.compatible_agentlock),
-      ]),
+      el("span", null, ["agentlock ", el("code", null, r.compatible_agentlock)]),
     );
   }
   for (const t of r.tags || []) {
@@ -120,28 +168,92 @@ function ruleCard(r) {
   return el("article", { class: "rule" }, [left, right]);
 }
 
+// ---------- pagination ----------
+
+function pageSize() {
+  const v = $pageSize?.value ?? "10";
+  return v === "all" ? Infinity : Math.max(1, parseInt(v, 10));
+}
+
+function renderPagination(totalPages) {
+  if (!$pagination) return;
+  $pagination.replaceChildren();
+  if (totalPages <= 1) return;
+
+  const prev = el("button", { type: "button" }, "‹ Prev");
+  prev.disabled = page <= 1;
+  prev.addEventListener("click", () => goTo(page - 1));
+  $pagination.appendChild(prev);
+
+  // Compact numeric paginator: 1 ... (page-1) page (page+1) ... last.
+  const slots = new Set([1, totalPages, page, page - 1, page + 1]);
+  const ordered = [...slots].filter((n) => n >= 1 && n <= totalPages).sort((a, b) => a - b);
+
+  let last = 0;
+  for (const n of ordered) {
+    if (last && n - last > 1) {
+      $pagination.appendChild(el("span", { class: "ellipsis" }, "…"));
+    }
+    const btn = el("button", { type: "button" }, String(n));
+    if (n === page) btn.setAttribute("aria-current", "page");
+    btn.addEventListener("click", () => goTo(n));
+    $pagination.appendChild(btn);
+    last = n;
+  }
+
+  const next = el("button", { type: "button" }, "Next ›");
+  next.disabled = page >= totalPages;
+  next.addEventListener("click", () => goTo(page + 1));
+  $pagination.appendChild(next);
+}
+
+function goTo(n) {
+  page = Math.max(1, n);
+  render();
+  // Scroll the result list into view so paging on mobile doesn't strand
+  // the user at the bottom of the previous page.
+  document.getElementById("results")?.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+// ---------- main render ----------
+
 function render() {
   const q = $q.value.trim();
   const sevSet = activeSeverities();
-  const visible = RULES.filter((r) => matches(r, q, sevSet));
+  const sortKey = $sort?.value ?? "severity";
+
+  const filtered = RULES.filter((r) => matches(r, q, sevSet)).sort(sortBy(sortKey));
+  const total = filtered.length;
+  const sz = pageSize();
+  const totalPages = sz === Infinity ? 1 : Math.max(1, Math.ceil(total / sz));
+  if (page > totalPages) page = totalPages;
+
+  const start = (page - 1) * (sz === Infinity ? 0 : sz);
+  const pageRules = sz === Infinity ? filtered : filtered.slice(start, start + sz);
 
   $results.replaceChildren();
   if ($count) {
-    const n = visible.length;
-    $count.textContent = n === RULES.length ? `${n} rule${n === 1 ? "" : "s"}` : `${n} of ${RULES.length}`;
+    if (total === 0) {
+      $count.textContent = "0 rules";
+    } else if (sz === Infinity || total <= sz) {
+      $count.textContent = `${total} rule${total === 1 ? "" : "s"}`;
+    } else {
+      $count.textContent = `${start + 1}–${Math.min(start + sz, total)} of ${total}`;
+    }
   }
 
-  if (visible.length === 0) {
+  if (pageRules.length === 0) {
     $results.appendChild(
       el("div", { class: "empty" }, "No rules match. Try a different query."),
     );
-    return;
+  } else {
+    for (const r of pageRules) $results.appendChild(ruleCard(r));
   }
 
-  for (const r of visible) {
-    $results.appendChild(ruleCard(r));
-  }
+  renderPagination(totalPages);
 }
+
+// ---------- bootstrap ----------
 
 async function main() {
   try {
@@ -167,8 +279,14 @@ async function main() {
   }
 
   render();
-  $q.addEventListener("input", render);
-  for (const c of $filters) c.addEventListener("change", render);
+  const onChange = () => {
+    page = 1;
+    render();
+  };
+  $q.addEventListener("input", onChange);
+  for (const c of $filters) c.addEventListener("change", onChange);
+  $sort?.addEventListener("change", onChange);
+  $pageSize?.addEventListener("change", onChange);
 }
 
 main();
