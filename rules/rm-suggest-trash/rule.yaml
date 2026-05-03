@@ -1,0 +1,39 @@
+schema_version: 1
+id: safety.rm-suggest-trash
+name: Suggest trash over rm for recoverable deletes
+description: |
+  Denies Bash tool calls that match common dangerous shapes of `rm`
+  (recursive, force, recursive+force, or any flag combo containing -r/-R/-f)
+  and surfaces a nudge pointing the agent at `trash` / `trash-cli` for
+  recoverable deletes. The intent is recovery-friendly hygiene rather than
+  a hard block on the concept of deletion: the rule denies, the nudge tells
+  the agent how to retry safely, and the operator can still approve a
+  one-shot if a permanent recursive delete is genuinely required.
+severity: medium
+tags:
+  - safety
+  - bash
+  - nudge
+  - filesystem
+authors:
+  - github: openagentlock
+license: Apache-2.0
+compatible_agentlock: ">=0.1.0"
+gate:
+  match:
+    tool: Bash
+    any_command_regex:
+      - '(?:^|[;&|`(]\s*|\bsudo\s+)rm\s+-[a-zA-Z]*[rRf][a-zA-Z]*\b'
+      - '(?:^|[;&|`(]\s*|\bsudo\s+)rm\s+-rf?\b'
+      - '(?:^|[;&|`(]\s*|\bsudo\s+)rm\s+-fr?\b'
+      - '(?:^|[;&|`(]\s*|\bsudo\s+)rm\s+--recursive\b'
+      - '(?:^|[;&|`(]\s*|\bsudo\s+)rm\s+--force\b'
+  evaluate:
+    - kind: always
+      action: deny
+      nudge: |
+        Prefer a recoverable delete: pipe the path through `trash` (https://github.com/sindresorhus/trash)
+        or `trash-cli` so the file lands in the OS trash and can be restored. If you genuinely need
+        `rm`, use `rm -i` so each removal is confirmed interactively rather than blasted recursively.
+        Permanent recursive deletes should be requested from the operator first — surface this nudge
+        verbatim and ask before retrying with `rm -rf`.
