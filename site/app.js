@@ -7,12 +7,16 @@
 // Treat every field on a rule as untrusted — the registry is a public
 // PR target.
 
-const REGISTRY = "openagentlock/rules";
-const INSTALL_CMD = (id) => `agentlock rules install ${REGISTRY}:${id}`;
+// The CLI auto-registers `openagentlock-rules` as the upstream id, so the
+// install command can stay short — no need to namespace `<registry>:<id>`
+// for the default catalog.
+const INSTALL_CMD = (id) => `agentlock rules install ${id}`;
 
 const $q = document.getElementById("q");
 const $results = document.getElementById("results");
 const $generated = document.getElementById("generated-at");
+const $count = document.getElementById("count");
+const $metaCount = document.getElementById("meta-count");
 const $filters = Array.from(document.querySelectorAll('.filters input[type="checkbox"]'));
 
 let RULES = [];
@@ -122,6 +126,10 @@ function render() {
   const visible = RULES.filter((r) => matches(r, q, sevSet));
 
   $results.replaceChildren();
+  if ($count) {
+    const n = visible.length;
+    $count.textContent = n === RULES.length ? `${n} rule${n === 1 ? "" : "s"}` : `${n} of ${RULES.length}`;
+  }
 
   if (visible.length === 0) {
     $results.appendChild(
@@ -141,8 +149,15 @@ async function main() {
     if (!res.ok) throw new Error(`fetch index.json: HTTP ${res.status}`);
     const data = await res.json();
     RULES = data.rules || [];
-    if (data.generated_at) {
-      $generated.textContent = `index built ${data.generated_at}`;
+    if (data.generated_at && $generated) {
+      const t = new Date(data.generated_at);
+      const fmt = Number.isNaN(t.getTime())
+        ? data.generated_at
+        : t.toISOString().slice(0, 16).replace("T", " ") + " UTC";
+      $generated.textContent = `index built ${fmt}`;
+    }
+    if ($metaCount) {
+      $metaCount.textContent = `${RULES.length} rule${RULES.length === 1 ? "" : "s"}`;
     }
   } catch (err) {
     $results.replaceChildren(
