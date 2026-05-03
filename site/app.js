@@ -143,17 +143,23 @@ function ruleCard(r) {
     meta,
   ]);
 
+  // Single inline command + an icon-only copy button on the right. The
+  // verbose "Copy install command" button was redundant — the code
+  // block carries enough context, the icon does the rest.
   const cmdNode = el("code", null, cmd);
-  const btn = el("button", null, "Copy install command");
+  const btn = el("button", { class: "copy-btn", "aria-label": "Copy install command", title: "Copy install command" });
+  btn.appendChild(copyIcon());
   btn.addEventListener("click", async () => {
     try {
       await navigator.clipboard.writeText(cmd);
-      btn.textContent = "Copied — paste in your terminal";
       btn.classList.add("copied");
+      btn.replaceChildren(checkIcon());
+      btn.setAttribute("title", "Copied");
       setTimeout(() => {
-        btn.textContent = "Copy install command";
         btn.classList.remove("copied");
-      }, 2200);
+        btn.replaceChildren(copyIcon());
+        btn.setAttribute("title", "Copy install command");
+      }, 1800);
     } catch {
       const range = document.createRange();
       range.selectNodeContents(cmdNode);
@@ -163,9 +169,46 @@ function ruleCard(r) {
     }
   });
 
-  const right = el("div", { class: "install" }, [cmdNode, btn]);
+  const cmdRow = el("div", { class: "cmd-row" }, [cmdNode, btn]);
+  const right = el("div", { class: "install" }, [cmdRow]);
 
   return el("article", { class: "rule" }, [left, right]);
+}
+
+function svgEl(d) {
+  const svgNs = "http://www.w3.org/2000/svg";
+  const svg = document.createElementNS(svgNs, "svg");
+  svg.setAttribute("viewBox", "0 0 24 24");
+  svg.setAttribute("fill", "none");
+  svg.setAttribute("stroke", "currentColor");
+  svg.setAttribute("stroke-width", "2");
+  svg.setAttribute("stroke-linecap", "round");
+  svg.setAttribute("stroke-linejoin", "round");
+  svg.setAttribute("aria-hidden", "true");
+  const path = document.createElementNS(svgNs, "path");
+  path.setAttribute("d", d);
+  svg.appendChild(path);
+  return svg;
+}
+function copyIcon() {
+  // lucide "copy" icon
+  const svg = svgEl("M0 0");
+  svg.firstChild?.remove();
+  const ns = "http://www.w3.org/2000/svg";
+  const rect = document.createElementNS(ns, "rect");
+  rect.setAttribute("x", "9");
+  rect.setAttribute("y", "9");
+  rect.setAttribute("width", "13");
+  rect.setAttribute("height", "13");
+  rect.setAttribute("rx", "2");
+  const path = document.createElementNS(ns, "path");
+  path.setAttribute("d", "M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1");
+  svg.appendChild(rect);
+  svg.appendChild(path);
+  return svg;
+}
+function checkIcon() {
+  return svgEl("M20 6 9 17l-5-5");
 }
 
 // ---------- pagination ----------
