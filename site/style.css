@@ -632,13 +632,22 @@ footer a:hover {
   .hero .lede { font-size: 16px; }
   .rule {
     grid-template-columns: 1fr;
-    padding: 20px;
+    padding: 18px;
+    gap: 14px;
   }
-  .rule-name { font-size: 19px; }
+  .rule-name { font-size: 18px; }
   .install { min-width: 0; }
   .split { grid-template-columns: 1fr; gap: 32px; }
   .explainer { padding: 40px 0; }
   .explainer h2 { font-size: 22px; }
+  /* Long command samples in the explainer sections need to wrap on
+   * narrow viewports — left as-is they overflow the viewport and force
+   * a horizontal page scroll. */
+  .explainer pre,
+  .explainer pre code {
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
   .results-meta { font-size: 12px; }
   .results-controls { gap: 10px; }
   footer .container {
@@ -654,4 +663,31 @@ footer a:hover {
   .header-nav a:not(:last-child) { display: none; }
   .filters { gap: 6px; }
   .filters label { padding: 5px 9px; }
+
+  /* Compact rule cards on phone: hide the long description and the
+   * meta row so each card is just title / id / severity / install
+   * command. The full README is one tap away on the GitHub repo. */
+  .rule-desc,
+  .rule-meta {
+    display: none;
+  }
+  .rule { padding: 16px; gap: 10px; }
+  .rule-id { margin-bottom: 6px; }
+  .cmd-row code {
+    font-size: 11.5px;
+    padding: 8px 10px;
+  }
+  .copy-btn { width: 32px; }
+
+  /* Hero copy is a bit long — let the lede shrink so search bar is
+   * still above the fold on a 4.7" viewport. */
+  .hero { padding: 36px 0 24px; }
+  .hero .lede { font-size: 14.5px; line-height: 1.5; }
+
+  /* Section command samples can be tiny in landscape phone — keep the
+   * text usable. */
+  .explainer pre { padding: 12px 14px; font-size: 12px; }
+  .explainer h2 { font-size: 20px; }
+  .explainer p,
+  .explainer ol { font-size: 14px; }
 }
