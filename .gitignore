@@ -6,3 +6,6 @@ dist/
 # Generated at deploy time by the pages workflow. The Pages site fetches
 # data/index.json from the deployed artifact, not from the repo.
 site/data/index.json
+
+# Local-tooling output (claude-code graphify, etc.)
+graphify-out/
