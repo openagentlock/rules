@@ -71,10 +71,7 @@ function ruleCard(r) {
   ]);
 
   const meta = el("div", { class: "rule-meta" });
-  meta.appendChild(el("span", null, [`verdict: `, el("code", null, r.on_hit)]));
-  if (r.require_strong) {
-    meta.appendChild(el("span", null, "requires strong signer"));
-  }
+  meta.appendChild(el("span", null, [`action: `, el("code", null, r.action)]));
   if (r.compatible_agentlock) {
     meta.appendChild(
       el("span", null, [

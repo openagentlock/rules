@@ -29,9 +29,9 @@ Edit `rules/my-new-rule/rule.yaml`. The schema lives at `schema/rule.schema.json
 | `description` | 1–3 sentences of why the rule exists. |
 | `severity` | `info`, `low`, `medium`, `high`, `critical`. |
 | `tags` | Free-form, lowercase. Used by site search. |
-| `gate.when` | Match conditions — same shape as the OpenAgentLock policy `when` block. |
-| `gate.on_hit` | `allow`, `deny`, `monitor`, or `warn`. |
-| `gate.require_strong` | `true` if this rule should refuse weak signers (unattested / software). |
+| `gate.match` | Match conditions in OpenAgentLock-native shape: `tool`, `any_command_regex` (array), `any_path_regex`, `any_url_regex`, `path_glob`. |
+| `gate.evaluate` | Array of evaluator entries. v1 supports `kind: always` with `action` ∈ {`allow`, `deny`, `monitor`, `warn`}. Richer evaluators (`allowlist`, `typosquat`) are passed through verbatim. |
+| `gate.mode` | (optional) Per-gate mode override: `monitor` or `firewall`. |
 
 Then write `README.md` for your rule. Cover:
 

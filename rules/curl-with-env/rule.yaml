@@ -16,8 +16,10 @@ authors:
 license: Apache-2.0
 compatible_agentlock: ">=0.1.0"
 gate:
-  when:
+  match:
     tool: Bash
-    command_regex: 'curl[^|;&]*\$[A-Z_]+'
-  on_hit: deny
-  require_strong: true
+    any_command_regex:
+      - 'curl[^|;&]*\$[A-Z_]+'
+  evaluate:
+    - kind: always
+      action: deny

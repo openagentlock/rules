@@ -55,25 +55,56 @@
     },
     "gate": {
       "type": "object",
-      "required": ["on_hit"],
+      "required": ["match", "evaluate"],
       "additionalProperties": false,
+      "description": "OpenAgentLock-native gate block. Mirrors the shape used by the daemon's policy YAML so installs are a verbatim copy.",
       "properties": {
-        "when": {
+        "mode": {
+          "type": "string",
+          "enum": ["monitor", "firewall"]
+        },
+        "disabled": {
+          "type": "boolean"
+        },
+        "match": {
           "type": "object",
           "additionalProperties": true,
-          "description": "Match conditions. Mirrors the OpenAgentLock policy 'when' block."
-        },
-        "on_hit": {
-          "type": "string",
-          "enum": ["allow", "deny", "monitor", "warn"]
-        },
-        "require_strong": {
-          "type": "boolean",
-          "default": false
+          "properties": {
+            "tool": { "type": "string" },
+            "tool_prefix": { "type": "string" },
+            "any_command_regex": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "any_path_regex": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "any_url_regex": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "path_glob": { "type": "string" }
+          }
         },
         "evaluate": {
           "type": "array",
-          "items": { "type": "object" }
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": ["kind", "action"],
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": ["always", "allowlist", "typosquat"]
+              },
+              "action": {
+                "type": "string",
+                "enum": ["allow", "deny", "monitor", "warn"]
+              }
+            },
+            "additionalProperties": true
+          }
         }
       }
     }

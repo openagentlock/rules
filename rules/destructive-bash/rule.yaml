@@ -16,8 +16,14 @@ authors:
 license: Apache-2.0
 compatible_agentlock: ">=0.1.0"
 gate:
-  when:
+  match:
     tool: Bash
-    command_regex: '(rm\s+-rf?\s+/|DROP\s+TABLE|dd\s+if=.*of=/dev/sd|mkfs\.|curl\s+[^|]*\|\s*(ba)?sh)'
-  on_hit: deny
-  require_strong: false
+    any_command_regex:
+      - 'rm\s+-rf?\s+/'
+      - 'DROP\s+TABLE'
+      - 'dd\s+if=.*of=/dev/sd'
+      - 'mkfs\.'
+      - 'curl\s+[^|]*\|\s*(ba)?sh'
+  evaluate:
+    - kind: always
+      action: deny

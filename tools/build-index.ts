@@ -19,8 +19,7 @@ interface RuleIndexEntry {
   authors: { name?: string; github: string }[];
   license: string;
   compatible_agentlock?: string;
-  on_hit: string;
-  require_strong: boolean;
+  action: string;
   path: string;
   readme_excerpt: string;
 }
@@ -36,9 +35,10 @@ interface RuleFile {
   license?: string;
   compatible_agentlock?: string;
   gate: {
-    when?: Record<string, unknown>;
-    on_hit: string;
-    require_strong?: boolean;
+    match?: Record<string, unknown>;
+    evaluate: Array<{ kind: string; action: string }>;
+    mode?: string;
+    disabled?: boolean;
   };
 }
 
@@ -81,8 +81,7 @@ function buildIndex(): RuleIndexEntry[] {
       authors: rule.authors ?? [],
       license: rule.license ?? "Apache-2.0",
       compatible_agentlock: rule.compatible_agentlock,
-      on_hit: rule.gate.on_hit,
-      require_strong: rule.gate.require_strong ?? false,
+      action: rule.gate.evaluate?.[0]?.action ?? "deny",
       path: `rules/${entry}/rule.yaml`,
       readme_excerpt: readmeExcerpt(readme),
     });
