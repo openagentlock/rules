@@ -1,0 +1,59 @@
+schema_version: 1
+id: rogue.system-auth-write
+name: Block writes to system auth/identity/network files (sudoers, passwd, hosts, ssh)
+description: |
+  Denies Write tool calls against the canonical authentication,
+  identity, and network-redirect files: `/etc/sudoers` and
+  `/etc/sudoers.d/*` (privilege escalation), `/etc/passwd` and
+  `/etc/shadow` (account creation), `/etc/hosts` and
+  `/etc/resolv.conf` (DNS / domain hijacking), `/etc/ssh/sshd_config`
+  and `/etc/pam.d/*` (auth-policy weakening), `/etc/nsswitch.conf`
+  (name-resolution hijack), and `~/.ssh/authorized_keys` (the
+  classic SSH backdoor primitive). These files are off-limits to
+  any agent — modifications go through OS package management and
+  human review, never through a coding assistant.
+severity: critical
+tags:
+  - auth
+  - persistence
+  - system
+  - ssh
+  - mitre-t1098
+  - write
+authors:
+  - github: RonCodes88
+license: Apache-2.0
+compatible_agentlock: ">=0.1.0"
+gate:
+  match:
+    tool: Write
+    any_path_regex:
+      - '^/etc/sudoers(?:$|\.d/)'
+      - '^/etc/passwd$'
+      - '^/etc/shadow$'
+      - '^/etc/group$'
+      - '^/etc/gshadow$'
+      - '^/etc/hosts$'
+      - '^/etc/hostname$'
+      - '^/etc/resolv\.conf$'
+      - '^/etc/nsswitch\.conf$'
+      - '^/etc/pam\.d/'
+      - '^/etc/security/'
+      - '^/etc/ssh/sshd_config(?:$|\.d/)'
+      - '^/etc/ssh/ssh_host_'
+      - '^/etc/ssh/ssh_config(?:$|\.d/)'
+      - '(?:^|/)\.ssh/authorized_keys2?$'
+      - '(?:^|/)\.ssh/config$'
+      - '(?:^|/)\.ssh/known_hosts$'
+      - '^/root/\.ssh/'
+      - '^/etc/login\.defs$'
+      - '^/etc/securetty$'
+      - '^/etc/sub(?:uid|gid)$'
+      - '^/etc/(?:hosts\.allow|hosts\.deny)$'
+      - '^/etc/cron\.allow$'
+      - '^/etc/cron\.deny$'
+      - '^/etc/at\.allow$'
+      - '^/private/etc/(?:sudoers|passwd|hosts|pam\.d|ssh)'
+  evaluate:
+    - kind: always
+      action: deny

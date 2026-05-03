@@ -1,0 +1,57 @@
+schema_version: 1
+id: rogue.security-disable
+name: Block disabling security controls (firewall, SELinux/AppArmor, SIP, audit, history)
+description: |
+  Denies bash invocations that disable host security controls: Linux
+  firewalls (iptables -F, nft flush ruleset, ufw disable, systemctl
+  stop firewalld), MAC frameworks (setenforce 0, aa-disable,
+  systemctl stop apparmor/auditd), macOS protections (csrutil
+  disable, spctl --master-disable), shell-history erasure (unset
+  HISTFILE, history -c), and cloud-side audit/observability deletion
+  (aws cloudtrail stop-logging, aws guardduty delete-detector). Each
+  shape blinds the operator to whatever the agent does next; this is
+  defence evasion in the literal MITRE sense (TA0005).
+severity: critical
+tags:
+  - security-disable
+  - defence-evasion
+  - mitre-ta0005
+  - bash
+authors:
+  - github: RonCodes88
+license: Apache-2.0
+compatible_agentlock: ">=0.1.0"
+gate:
+  match:
+    tool: Bash
+    any_command_regex:
+      - '\biptables\s+(?:-t\s+\w+\s+)?-F\b'
+      - '\bip6tables\s+(?:-t\s+\w+\s+)?-F\b'
+      - '\bnft\s+flush\s+ruleset\b'
+      - '\bufw\s+disable\b'
+      - '\bsystemctl\s+(?:stop|disable|mask)\s+(?:firewalld|ufw|iptables|nftables)\b'
+      - '\bsetenforce\s+0\b'
+      - '\bsetenforce\s+Permissive\b'
+      - '\baa-disable\b'
+      - '\baa-complain\b'
+      - '\bsystemctl\s+(?:stop|disable|mask)\s+(?:apparmor|auditd|rsyslog|systemd-journald)\b'
+      - '\bauditctl\s+-D\b'
+      - '\bservice\s+auditd\s+stop\b'
+      - '\bcsrutil\s+disable\b'
+      - '\bspctl\s+--master-disable\b'
+      - '\bdefaults\s+write\s+/Library/Preferences/com\.apple\.security'
+      - '\bunset\s+HISTFILE\b'
+      - '\bset\s+\+o\s+history\b'
+      - '\bhistory\s+-c\b'
+      - '\bexport\s+HISTSIZE=0\b'
+      - '\bexport\s+HISTFILE=/dev/null\b'
+      - '\brm\s+(?:-[a-zA-Z]+\s+)?~?/?\.bash_history\b'
+      - '\brm\s+(?:-[a-zA-Z]+\s+)?~?/?\.zsh_history\b'
+      - '\baws\s+cloudtrail\s+(?:stop-logging|delete-trail|put-event-selectors)\b'
+      - '\baws\s+guardduty\s+(?:delete-detector|disable-organization-admin-account)\b'
+      - '\baws\s+config\s+(?:stop-configuration-recorder|delete-configuration-recorder|delete-delivery-channel)\b'
+      - '\baws\s+securityhub\s+(?:disable-security-hub|disassociate-from-administrator-account)\b'
+      - '\bgcloud\s+logging\s+sinks\s+delete\b'
+  evaluate:
+    - kind: always
+      action: deny
