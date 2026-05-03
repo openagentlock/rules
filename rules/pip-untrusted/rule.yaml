@@ -1,0 +1,48 @@
+schema_version: 1
+id: supply-chain.pip-untrusted
+name: Block untrusted pip / uv / poetry installs and PyPI publishing
+description: |
+  Denies bash invocations of `pip install` (and uv/poetry equivalents)
+  with non-PyPI sources: HTTP/HTTPS URLs, git+ refs, file: refs,
+  raw `.whl` and `.tar.gz` paths, and `--index-url` / `--extra-index-url`
+  / `--trusted-host` flags. Also denies `twine upload` and `poetry
+  publish`. The hermes-px PyPI typosquat (2025) used precisely this
+  shape: a pip install of a malicious package whose postinstall fired
+  a Claude system-prompt + telemetry exfil to an attacker-controlled
+  Supabase. ShinyHunters has run sustained typosquat campaigns
+  against AI developer tooling on PyPI through 2025–2026.
+severity: high
+tags:
+  - supply-chain
+  - pypi
+  - pip
+  - poetry
+  - uv
+  - typosquat
+  - bash
+authors:
+  - github: RonCodes88
+license: Apache-2.0
+compatible_agentlock: ">=0.1.0"
+gate:
+  match:
+    tool: Bash
+    any_command_regex:
+      - '\bpip3?\s+install\s+(?:[^|;&]*\s+)?(?:https?://|git\+|file:)'
+      - '\bpip3?\s+install\s+(?:[^|;&]*\s+)?--index-url(?:\s|=)'
+      - '\bpip3?\s+install\s+(?:[^|;&]*\s+)?--extra-index-url(?:\s|=)'
+      - '\bpip3?\s+install\s+(?:[^|;&]*\s+)?-i\s+'
+      - '\bpip3?\s+install\s+(?:[^|;&]*\s+)?--trusted-host(?:\s|=)'
+      - '\bpip3?\s+install\s+(?:[^|;&]*\s+)?[^\s]+\.whl(?:\b|$)'
+      - '\bpip3?\s+install\s+(?:[^|;&]*\s+)?[^\s]+\.tar\.gz(?:\b|$)'
+      - '\bpip3?\s+install\s+(?:[^|;&]*\s+)?--no-deps\b'
+      - '\b(?:uv|uvx)\s+(?:tool\s+)?(?:run|install)\s+(?:[^|;&]*\s+)?(?:git\+|https?://|file:)'
+      - '\bpoetry\s+(?:add|source\s+add)\s+(?:[^|;&]*\s+)?(?:git\+|https?://)'
+      - '\btwine\s+upload\b'
+      - '\bpoetry\s+publish\b'
+      - '\bpython3?\s+-m\s+twine\s+upload\b'
+      - '\bpython3?\s+-m\s+pip\s+install\s+(?:[^|;&]*\s+)?(?:https?://|git\+|file:)'
+      - '\bconda\s+install\s+(?:[^|;&]*\s+)?(?:--channel|-c)\s+'
+  evaluate:
+    - kind: always
+      action: deny

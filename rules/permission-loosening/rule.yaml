@@ -1,0 +1,44 @@
+schema_version: 1
+id: rogue.permission-loosening
+name: Block chmod/chown that grant world-writable, setuid, or recursive root
+description: |
+  Denies bash invocations that loosen file permissions in dangerous
+  ways: `chmod 777`, any mode ending in 777, `chmod a+w` / `o+w`,
+  `chmod +s` (setuid), `chmod 666 /etc/...`, recursive `chown` against
+  system directories, and ACL-based world-write grants. MITRE ATT&CK
+  T1222.002 catalogs file/dir permission modification as a defence-
+  evasion and persistence technique. The standard "AI told me to fix
+  the permissions" failure mode produces a `chmod -R 777` against a
+  config or build directory and silently turns it into a writable
+  backdoor for any local user.
+severity: high
+tags:
+  - permissions
+  - chmod
+  - chown
+  - mitre-t1222
+  - bash
+authors:
+  - github: RonCodes88
+license: Apache-2.0
+compatible_agentlock: ">=0.1.0"
+gate:
+  match:
+    tool: Bash
+    any_command_regex:
+      - '\bchmod\s+(?:-R\s+)?0?777\b'
+      - '\bchmod\s+(?:-R\s+)?[0-7]?777\b'
+      - '\bchmod\s+(?:-R\s+)?a\+w\b'
+      - '\bchmod\s+(?:-R\s+)?a=rwx\b'
+      - '\bchmod\s+(?:-R\s+)?o\+w\b'
+      - '\bchmod\s+(?:-R\s+)?(?:u|g|a)\+s\b'
+      - '\bchmod\s+(?:-R\s+)?\+s\b'
+      - '\bchmod\s+(?:-R\s+)?[2467]\d\d\d\b'
+      - '\bchmod\s+(?:-R\s+)?(?:0?666|a\+rw)\s+(?:/etc|/usr|/var|/root|/bin|/sbin|/boot)'
+      - '\bchown\s+-R\s+[^\s]+\s+/(?:etc|usr|bin|sbin|root|boot)(?:/|$|\s)'
+      - '\bchown\s+(?:[^|;&]*\s+)?-R\s+[^\s]+:[^\s]*\s+/'
+      - '\bsetfacl\s+(?:[^|;&]*\s+)?-m\s+(?:o|other):rwx\b'
+      - '\bxattr\s+-d\s+com\.apple\.quarantine\s+'
+  evaluate:
+    - kind: always
+      action: deny

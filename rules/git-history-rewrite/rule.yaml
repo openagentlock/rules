@@ -1,0 +1,53 @@
+schema_version: 1
+id: rogue.git-history-rewrite
+name: Block git history-rewriting and ref-destruction commands
+description: |
+  Denies bash invocations of git's destructive history-rewrite
+  primitives: `git filter-branch`, `git filter-repo`, `bfg`,
+  `git reset --hard <remote>/<branch>` (overwriting local work with
+  upstream), `git update-ref -d`, `git reflog expire --expire=now`,
+  and `git gc --prune=now`. These are the commands that turn
+  recoverable mistakes into permanent ones — they delete the safety
+  nets (reflog, dangling commits) that `git reset --hard`-style
+  damage normally leaves behind. An agent reaching for them is one
+  prompt away from "we lost three days of work and there's no
+  reflog left to recover from".
+
+  This rule is complementary to the existing `rogue.git-force-push`
+  (which blocks force-push to shared branches); this one blocks the
+  local destructive primitives.
+severity: high
+tags:
+  - git
+  - destructive
+  - history
+  - bash
+authors:
+  - github: RonCodes88
+license: Apache-2.0
+compatible_agentlock: ">=0.1.0"
+gate:
+  match:
+    tool: Bash
+    any_command_regex:
+      - '\bgit\s+filter-branch\b'
+      - '\bgit\s+filter-repo\b'
+      - '\bgit-filter-repo\b'
+      - '\bgit\s+reset\s+--hard\s+(?:origin|upstream|remotes)/'
+      - '\bgit\s+reset\s+--hard\s+HEAD~\d+\s*$'
+      - '\bgit\s+update-ref\s+-d\s+'
+      - '\bgit\s+reflog\s+expire\s+(?:[^|;&]*\s+)?--expire=(?:now|0)\b'
+      - '\bgit\s+reflog\s+delete\b'
+      - '\bgit\s+gc\s+(?:[^|;&]*\s+)?--prune=(?:now|all|0|=now)\b'
+      - '\bgit\s+gc\s+(?:[^|;&]*\s+)?--aggressive\b'
+      - '\bbfg(?:\.jar)?\s+'
+      - '\bjava\s+-jar\s+[^\s]*bfg[^\s]*\.jar\s+'
+      - '\bgit\s+branch\s+-D\s+'
+      - '\bgit\s+tag\s+-d\s+'
+      - '\bgit\s+push\s+(?:[^|;&]*\s+)?--delete\s+'
+      - '\bgit\s+push\s+(?:[^|;&]*\s+)?:\s*\S+'
+      - '\bgit\s+clean\s+-(?:[^\s]*[fdx]){2,}'
+      - '\bgit\s+worktree\s+remove\s+(?:[^|;&]*\s+)?-f\b'
+  evaluate:
+    - kind: always
+      action: deny

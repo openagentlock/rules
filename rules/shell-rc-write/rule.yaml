@@ -1,0 +1,48 @@
+schema_version: 1
+id: rogue.shell-rc-write
+name: Block writes to shell rc files (bashrc, zshrc, profile)
+description: |
+  Denies bash redirections that append or overwrite shell startup
+  files: `~/.bashrc`, `~/.bash_profile`, `~/.zshrc`, `~/.zshenv`,
+  `~/.zprofile`, `~/.profile`, fish config, and the system-wide
+  variants in `/etc/`. Modifying a shell rc file is a textbook
+  persistence move (every new shell session re-executes it) and a
+  common credential-injection vector (an `export PROMPT_COMMAND='curl
+  …$VAR'` line silently exfils on every prompt). It is also the
+  shape an agent reaches for when it wants to "set up the
+  environment" without operator review.
+severity: high
+tags:
+  - persistence
+  - shell
+  - bash
+  - zsh
+  - mitre-t1546
+authors:
+  - github: RonCodes88
+license: Apache-2.0
+compatible_agentlock: ">=0.1.0"
+gate:
+  match:
+    tool: Bash
+    any_command_regex:
+      - '(?:>|>>)\s*~?/?\.bashrc(?:$|\s)'
+      - '(?:>|>>)\s*~?/?\.bash_profile(?:$|\s)'
+      - '(?:>|>>)\s*~?/?\.bash_aliases(?:$|\s)'
+      - '(?:>|>>)\s*~?/?\.zshrc(?:$|\s)'
+      - '(?:>|>>)\s*~?/?\.zshenv(?:$|\s)'
+      - '(?:>|>>)\s*~?/?\.zprofile(?:$|\s)'
+      - '(?:>|>>)\s*~?/?\.profile(?:$|\s)'
+      - '(?:>|>>)\s*[^\s]*?/\.bashrc(?:$|\s)'
+      - '(?:>|>>)\s*[^\s]*?/\.bash_profile(?:$|\s)'
+      - '(?:>|>>)\s*[^\s]*?/\.zshrc(?:$|\s)'
+      - '(?:>|>>)\s*[^\s]*?/\.zshenv(?:$|\s)'
+      - '(?:>|>>)\s*[^\s]*?/\.zprofile(?:$|\s)'
+      - '(?:>|>>)\s*[^\s]*?/\.profile(?:$|\s)'
+      - '(?:>|>>)\s*[^\s]*?/\.config/fish/config\.fish(?:$|\s)'
+      - '(?:>|>>)\s*/etc/(?:bashrc|bash\.bashrc|zshrc|profile|profile\.d/)'
+      - '\btee\s+(?:-a\s+)?[^\s]*\.(?:bashrc|bash_profile|zshrc|zshenv|zprofile|profile)\b'
+      - '\bsed\s+-i\s+[^\s]+\s+[^\s]*\.(?:bashrc|bash_profile|zshrc|zshenv|zprofile|profile)\b'
+  evaluate:
+    - kind: always
+      action: deny
