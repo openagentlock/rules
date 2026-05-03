@@ -19,7 +19,7 @@ Standing reads of well-known secret locations:
 
 ## Why it matters
 
-The community demo scenario for this gate: an agent debugging "auth failure" reads `.env` to "check the env config", and the keys are then in the agent's context — which means in any subsequent tool-call payload (a curl, a log, a chat message back to the LLM provider). Even without active exfiltration, a `Read .env` is the moment trust crosses from your shell into the model.
+The canonical scenario for this gate: an agent debugging "auth failure" reads `.env` to "check the env config", and the keys are then in the agent's context — which means in any subsequent tool-call payload (a curl, a log, a chat message back to the LLM provider). Even without active exfiltration, a `Read .env` is the moment trust crosses from your shell into the model.
 
 The daemon-side approval flow (`session approve --one-shot`) is the right escape hatch — the agent gets the file once, the deny becomes an `allow` for that one call, and the ledger records the explicit human approval.
 

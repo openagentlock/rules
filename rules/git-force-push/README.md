@@ -16,9 +16,9 @@ Block `git push --force` to canonical shared branches: `main`, `master`, `develo
 - Force push to a personal/feature branch — that's normal workflow.
 - Force push when the target branch is implicit (no positional arg) — the regex needs the branch name to be present so it doesn't false-positive on `git push --force` against an upstream-tracked feature branch.
 
-## community scenario tie-in
+## Why it matters
 
-This is the demo scenario "the main branch is broken, push this fix fast" — the agent runs `git push --force origin main`, the gate denies, and the operator either approves with a fresh session root (`session rotate`) or refuses. Force-push to main is exactly the kind of action that should cost something. Two taps, a fresh session root, and it's visible in the ledger forever.
+The shape this gate catches: an operator under time pressure asks the agent to "push this fix fast", and the agent reaches for `git push --force origin main` to skirt a branch-protection complaint. The gate denies. The operator either approves explicitly (with a fresh session root via `session rotate`) or refuses and ships through a normal PR. Force-push to main should cost something — a deliberate two-tap flow plus a permanent ledger entry.
 
 ## Tuning
 

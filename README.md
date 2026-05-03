@@ -49,10 +49,6 @@ agentlock rules sync
 
 Multiple registries are merged at sync time; rule ids must be unique within a single registry but are namespaced by registry url upstream.
 
-## Trust model (v1, will tighten)
-
-v1 ships **unsigned** rules. The trust story today is *"this repo is openagentlock/rules and you reviewed the diff before installing"*. Per-rule author signatures are tracked in [issue #1](../../issues) and will land before any "one-click install from the browser" feature is enabled in the daemon. Until then the install button on the site only renders a command for you to paste.
-
 ## License
 
 Apache-2.0 — see [LICENSE](LICENSE). Individual rules may declare a different license in `rule.yaml`'s `license` field; the default is Apache-2.0 to match the registry.
