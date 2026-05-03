@@ -1,0 +1,38 @@
+schema_version: 1
+id: rogue.systemd-persistence
+name: Block Linux systemd unit and timer persistence installs
+description: |
+  Denies bash invocations that install or enable systemd units and
+  timers: writes to `/etc/systemd/system/`, `/usr/lib/systemd/system/`,
+  `~/.config/systemd/user/`, and `systemctl enable` of new units.
+  systemd is the modern Linux persistence vector; a `.service` plus
+  `systemctl enable` survives reboots, runs as root by default, and is
+  invisible to operators who only check cron. MITRE ATT&CK T1543.002
+  catalogs this as Create or Modify System Process: Systemd Service.
+severity: high
+tags:
+  - persistence
+  - systemd
+  - linux
+  - mitre-t1543
+  - bash
+authors:
+  - github: RonCodes88
+license: Apache-2.0
+compatible_agentlock: ">=0.1.0"
+gate:
+  match:
+    tool: Bash
+    any_command_regex:
+      - '\bsystemctl\s+(?:--user\s+)?enable\b'
+      - '\bsystemctl\s+(?:--user\s+)?(?:start|restart)\s+[a-zA-Z0-9._-]+\.(?:service|timer|socket|path)\b'
+      - '(?:>|>>)\s*/etc/systemd/system/[^/\s]+\.(?:service|timer|socket|path|target)'
+      - '(?:>|>>)\s*/usr/lib/systemd/system/[^/\s]+\.(?:service|timer|socket|path|target)'
+      - '(?:>|>>)\s*~?/?\.config/systemd/user/[^/\s]+\.(?:service|timer|socket|path|target)'
+      - '\bcp\s+(?:[^|;&]*\s+)?[^\s]+\.(?:service|timer)\s+/(?:etc|usr/lib)/systemd/'
+      - '\bmv\s+(?:[^|;&]*\s+)?[^\s]+\.(?:service|timer)\s+/(?:etc|usr/lib)/systemd/'
+      - '\bsystemd-run\s+(?:[^|;&]*\s+)?--unit=[a-zA-Z0-9._-]+'
+      - '\bloginctl\s+enable-linger\b'
+  evaluate:
+    - kind: always
+      action: deny

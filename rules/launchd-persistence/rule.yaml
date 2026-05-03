@@ -1,0 +1,40 @@
+schema_version: 1
+id: rogue.launchd-persistence
+name: Block macOS launchd persistence installs
+description: |
+  Denies bash invocations that install or load macOS LaunchAgents /
+  LaunchDaemons: writes to `~/Library/LaunchAgents/`,
+  `/Library/LaunchAgents/`, `/Library/LaunchDaemons/`,
+  `/System/Library/LaunchDaemons/`, plus `launchctl load`,
+  `launchctl bootstrap`, and `launchctl submit`. launchd is the macOS
+  equivalent of cron + systemd; an agent dropping a plist there
+  establishes execution-on-login or execution-on-boot persistence
+  that survives reboots and most cleanup workflows.
+severity: high
+tags:
+  - persistence
+  - launchd
+  - macos
+  - mitre-t1543
+  - bash
+authors:
+  - github: RonCodes88
+license: Apache-2.0
+compatible_agentlock: ">=0.1.0"
+gate:
+  match:
+    tool: Bash
+    any_command_regex:
+      - '\blaunchctl\s+(?:load|bootstrap|bootout|enable)\b'
+      - '\blaunchctl\s+submit\b'
+      - '(?:>|>>)\s*(?:/Users/[^/\s]+/)?Library/LaunchAgents/'
+      - '(?:>|>>)\s*/Library/Launch(?:Agents|Daemons)/'
+      - '(?:>|>>)\s*/System/Library/Launch(?:Agents|Daemons)/'
+      - '\bcp\s+(?:[^|;&]*\s+)?[^\s]+\s+(?:/Users/[^/\s]+/)?Library/LaunchAgents/'
+      - '\bcp\s+(?:[^|;&]*\s+)?[^\s]+\s+/Library/Launch(?:Agents|Daemons)/'
+      - '\bmv\s+(?:[^|;&]*\s+)?[^\s]+\s+(?:/Users/[^/\s]+/)?Library/LaunchAgents/'
+      - '\bmv\s+(?:[^|;&]*\s+)?[^\s]+\s+/Library/Launch(?:Agents|Daemons)/'
+      - '\bplutil\s+-(?:replace|insert)\s+[^\s]+\s+(?:[^|;&]*\s+)?(?:Library/Launch(?:Agents|Daemons))'
+  evaluate:
+    - kind: always
+      action: deny
