@@ -1,0 +1,39 @@
+schema_version: 1
+id: rogue.secret-read
+name: Block reads of secret-bearing files
+description: |
+  Denies Read tool calls against the canonical secret-bearing paths:
+  .env / .env.* / .envrc, ~/.aws/credentials, SSH private keys
+  (id_rsa, id_ed25519, id_ecdsa), .npmrc / .pypirc, kubeconfigs,
+  netrc, gnupg secrets. Agents asking "let me check the env" rarely
+  need standing access to all of these — the explicit deny forces a
+  conscious decision via session approval rather than ambient read.
+severity: high
+tags:
+  - secrets
+  - filesystem
+  - read
+authors:
+  - github: openagentlock
+license: Apache-2.0
+compatible_agentlock: ">=0.1.0"
+gate:
+  match:
+    tool: Read
+    any_path_regex:
+      - '(^|/)\.env(\.[^/]+)?$'
+      - '(^|/)\.envrc$'
+      - '(^|/)\.aws/credentials$'
+      - '(^|/)\.aws/config$'
+      - '(^|/)\.ssh/id_(rsa|ed25519|ecdsa|dsa)(\.pub)?$'
+      - '(^|/)\.ssh/identity$'
+      - '(^|/)\.npmrc$'
+      - '(^|/)\.pypirc$'
+      - '(^|/)\.netrc$'
+      - '(^|/)\.gnupg/.*'
+      - '(^|/)kubeconfig$'
+      - '(^|/)\.kube/config$'
+      - '(^|/)gha?-creds\.json$'
+  evaluate:
+    - kind: always
+      action: deny

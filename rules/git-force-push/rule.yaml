@@ -1,0 +1,27 @@
+schema_version: 1
+id: rogue.git-force-push
+name: Block git force-push to shared branches
+description: |
+  Denies bash invocations of git push --force / -f / --force-with-lease
+  targeting main/master/develop/release branches by literal name. Force
+  push to a personal branch is fine; force push to a shared branch is
+  the textbook way to nuke other people's commits, and an agent should
+  never do it without explicit operator approval.
+severity: high
+tags:
+  - git
+  - destructive
+  - bash
+authors:
+  - github: openagentlock
+license: Apache-2.0
+compatible_agentlock: ">=0.1.0"
+gate:
+  match:
+    tool: Bash
+    any_command_regex:
+      - 'git\s+push\s+(?:[^|;&]*\s+)?(?:--force-with-lease|--force|-f\b)\s+\S+\s+(main|master|develop|release(/[^\s]+)?)'
+      - 'git\s+push\s+(?:[^|;&]*\s+)?\+(main|master|develop|release(/[^\s]+)?)'
+  evaluate:
+    - kind: always
+      action: deny

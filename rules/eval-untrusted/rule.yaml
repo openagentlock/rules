@@ -1,0 +1,30 @@
+schema_version: 1
+id: rogue.eval-untrusted
+name: Block dynamic eval of agent-supplied source
+description: |
+  Denies bash invocations that pipe agent-supplied input into a
+  language runtime's eval/exec entrypoint: python -c <stdin>, node -e
+  <stdin>, ruby -e, perl -e, sh -c with $(curl ...). These are the
+  shapes a prompt-injected agent uses to run arbitrary code without
+  writing a file the operator might inspect.
+severity: high
+tags:
+  - bash
+  - eval
+  - rce
+authors:
+  - github: openagentlock
+license: Apache-2.0
+compatible_agentlock: ">=0.1.0"
+gate:
+  match:
+    tool: Bash
+    any_command_regex:
+      - 'python3?\s+-c\s+["''].*(?:exec|eval|__import__|compile)\s*\('
+      - 'node\s+-e\s+["''].*(?:eval|Function|require\s*\(\s*["'']child_process)'
+      - '(?:ruby|perl)\s+-e\s+["''].*(?:eval|exec|system|`)'
+      - '(?:bash|sh|zsh)\s+-c\s+.*\$\((?:curl|wget)\s+'
+      - 'eval\s+["''`]?\$\((?:curl|wget)\s+'
+  evaluate:
+    - kind: always
+      action: deny

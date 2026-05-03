@@ -1,0 +1,29 @@
+schema_version: 1
+id: rogue.net-egress
+name: Block bash network egress to non-allowlisted hosts
+description: |
+  Denies bash curl / wget / nc invocations whose target host is not on
+  a small explicit allowlist (github.com, npmjs.org, pypi.org,
+  registry.crates.io, docs.python.org, plus localhost). The match is a
+  negative lookahead — the daemon's `kind: always` evaluator just
+  reads the regex hit and denies. False positives are deliberate: when
+  the agent needs a new host you should add it to the allowlist via a
+  rule fork, not by disabling this gate.
+severity: critical
+tags:
+  - exfil
+  - egress
+  - bash
+  - net
+authors:
+  - github: openagentlock
+license: Apache-2.0
+compatible_agentlock: ">=0.1.0"
+gate:
+  match:
+    tool: Bash
+    any_command_regex:
+      - '(?:curl|wget|nc)\s+[^|;&]*https?://(?!(?:[a-zA-Z0-9-]+\.)*(?:github\.com|githubusercontent\.com|npmjs\.org|pypi\.org|files\.pythonhosted\.org|registry\.crates\.io|docs\.python\.org|localhost|127\.0\.0\.1)(?:[/:?]|$))'
+  evaluate:
+    - kind: always
+      action: deny
