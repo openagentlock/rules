@@ -4,6 +4,10 @@ Community-maintained rules for [OpenAgentLock](https://github.com/openagentlock/
 
 A "rule" is a single policy gate (e.g. *block `rm -rf`*, *deny secret exfiltration via curl*). Each rule lives in its own directory under `rules/`, contains a `rule.yaml` and a `README.md`, and ships independently. The browsable site at <https://openagentlock.github.io/rules> indexes every rule and gives you a one-line install command.
 
+## Pair this repo with [openagentlock/skills](https://github.com/openagentlock/skills)
+
+Need a rule that isn't in the catalog yet? The [skills repo](https://github.com/openagentlock/skills) ships agent skills (Claude Code, Cursor, Codex) that turn natural-language intent into a policy gate. Tell the agent "block any bash command that pipes a file into `nc`", and the `block-pattern` skill drafts the YAML, runs `agentlock rules install`, and reports the deny verdict back. Once a rule has earned its keep, open a PR here to upstream it.
+
 ## Layout
 
 ```
