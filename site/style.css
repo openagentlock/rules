@@ -624,7 +624,7 @@ footer a:hover {
   .install { min-width: 240px; }
 }
 @media (max-width: 720px) {
-  .container { padding: 0 20px; }
+  .container { padding: 0 24px; }
   .header-inner { padding: 14px 0; gap: 12px; }
   .header-nav { gap: 14px; font-size: 13px; flex-wrap: wrap; }
   .hero { padding: 48px 0 32px; }
@@ -658,8 +658,9 @@ footer a:hover {
   .pagination button { padding: 7px 10px; min-width: 34px; }
 }
 @media (max-width: 460px) {
-  .container { padding: 0 16px; }
-  .hero h1 { font-size: 30px; }
+  .container { padding: 0 20px; }
+  .hero h1 { font-size: 26px; letter-spacing: -0.01em; }
+  .hero h1 em { font-style: italic; }
   .header-nav a:not(:last-child) { display: none; }
   .filters { gap: 6px; }
   .filters label { padding: 5px 9px; }
