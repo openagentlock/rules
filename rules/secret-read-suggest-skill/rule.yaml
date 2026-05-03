@@ -1,0 +1,49 @@
+schema_version: 1
+id: safety.secret-read-suggest-skill
+name: Force a skill for secret reads
+description: |
+  Denies Read tool calls against canonical secret-bearing paths
+  (.env / .env.*, ~/.ssh/*, ~/.aws/credentials, kubeconfig, .netrc, etc.)
+  and surfaces a nudge directing the agent to a dedicated `secret-fetcher`
+  skill instead of an ambient file read. Where `rogue.secret-read` is the
+  raw block, this rule layers on the "use the right tool" nudge — keeping
+  secret material out of the model's context window unless a purpose-built
+  skill brokers it.
+severity: high
+tags:
+  - safety
+  - secrets
+  - read
+  - nudge
+  - skill
+authors:
+  - github: openagentlock
+license: Apache-2.0
+compatible_agentlock: ">=0.1.0"
+gate:
+  match:
+    tool: Read
+    any_path_regex:
+      - '(^|/)\.env(\.[^/]+)?$'
+      - '(^|/)\.envrc$'
+      - '(^|/)\.aws/credentials$'
+      - '(^|/)\.aws/config$'
+      - '(^|/)\.ssh/id_(rsa|ed25519|ecdsa|dsa)(\.pub)?$'
+      - '(^|/)\.ssh/identity$'
+      - '(^|/)\.ssh/config$'
+      - '(^|/)\.npmrc$'
+      - '(^|/)\.pypirc$'
+      - '(^|/)\.netrc$'
+      - '(^|/)\.gnupg/.*'
+      - '(^|/)kubeconfig$'
+      - '(^|/)\.kube/config$'
+  evaluate:
+    - kind: always
+      action: deny
+      nudge: |
+        Don't read secret files directly into your context. If your harness has the
+        openagentlock/skills `secret-fetcher` skill installed, invoke it — the skill
+        brokers the value through a sealed channel so the secret never lands in your
+        prompt or tool-call payloads. Otherwise, ask the operator to read the file
+        and paste only the specific value you need (key name + use case), and treat
+        anything they paste as sensitive — do not echo it back into logs or reply text.
