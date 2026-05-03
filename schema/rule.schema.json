@@ -104,6 +104,7 @@
               },
               "nudge": {
                 "type": "string",
+                "maxLength": 2000,
                 "description": "Optional human-readable hint surfaced alongside the verdict. The daemon pipes this through to the agent harness so the model can recover (e.g. 'use trash instead of rm -rf'). Plain text, typically 1–4 sentences."
               }
             },

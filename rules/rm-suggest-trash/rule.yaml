@@ -23,11 +23,11 @@ gate:
   match:
     tool: Bash
     any_command_regex:
-      - '\brm\s+-[a-zA-Z]*[rRf][a-zA-Z]*\b'
-      - '\brm\s+-rf?\b'
-      - '\brm\s+-fr?\b'
-      - '\brm\s+--recursive\b'
-      - '\brm\s+--force\b'
+      - '(?:^|[;&|`(]\s*|\bsudo\s+)rm\s+-[a-zA-Z]*[rRf][a-zA-Z]*\b'
+      - '(?:^|[;&|`(]\s*|\bsudo\s+)rm\s+-rf?\b'
+      - '(?:^|[;&|`(]\s*|\bsudo\s+)rm\s+-fr?\b'
+      - '(?:^|[;&|`(]\s*|\bsudo\s+)rm\s+--recursive\b'
+      - '(?:^|[;&|`(]\s*|\bsudo\s+)rm\s+--force\b'
   evaluate:
     - kind: always
       action: deny
