@@ -1,14 +1,15 @@
 schema_version: 1
 id: rogue.net-egress
-name: Block bash network egress to non-allowlisted hosts
+name: Block bash POST / data egress over the network
 description: |
-  Denies bash curl / wget / nc invocations whose target host is not on
-  a small explicit allowlist (github.com, npmjs.org, pypi.org,
-  registry.crates.io, docs.python.org, plus localhost). The match is a
-  negative lookahead — the daemon's `kind: always` evaluator just
-  reads the regex hit and denies. False positives are deliberate: when
-  the agent needs a new host you should add it to the allowlist via a
-  rule fork, not by disabling this gate.
+  Denies bash curl / wget calls that ship data outbound: explicit
+  POST/PUT/PATCH/DELETE methods, --data* / -d body uploads, and
+  -F/--form multipart bodies. The match is intentionally on the
+  *shape of egress* (sending data out) rather than on hostnames —
+  the daemon's evaluator is RE2 and can't express a host-allowlist
+  via negative-lookahead. A future `kind: allowlist` evaluator will
+  let community rules ship a per-rule host allowlist; until then,
+  fork this rule and add positive whitelists if you need exceptions.
 severity: critical
 tags:
   - exfil
@@ -23,7 +24,13 @@ gate:
   match:
     tool: Bash
     any_command_regex:
-      - '(?:curl|wget|nc)\s+[^|;&]*https?://(?!(?:[a-zA-Z0-9-]+\.)*(?:github\.com|githubusercontent\.com|npmjs\.org|pypi\.org|files\.pythonhosted\.org|registry\.crates\.io|docs\.python\.org|localhost|127\.0\.0\.1)(?:[/:?]|$))'
+      - '(?:curl|wget)\s+[^|;&]*-X\s*(?:POST|PUT|PATCH|DELETE)'
+      - '(?:curl|wget)\s+[^|;&]*--data(?:-(?:binary|raw|urlencode|ascii))?(?:\s|=)'
+      - '(?:curl|wget)\s+[^|;&]*\s-d(?:\s|=)'
+      - '(?:curl|wget)\s+[^|;&]*\s-F(?:\s|=)'
+      - '(?:curl|wget)\s+[^|;&]*--form(?:\s|=)'
+      - '(?:curl|wget)\s+[^|;&]*--upload-file(?:\s|=)'
+      - '(?:curl|wget)\s+[^|;&]*-T(?:\s|=)'
   evaluate:
     - kind: always
       action: deny
