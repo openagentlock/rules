@@ -1,0 +1,46 @@
+schema_version: 1
+id: supply-chain.npm-untrusted
+name: Block untrusted npm / yarn / pnpm installs and credential operations
+description: |
+  Denies bash invocations of `npm install` (and yarn/pnpm/npx
+  equivalents) when the source is a URL, git ref, GitHub shortcut,
+  tarball, or local file path — the shapes that bypass the registry's
+  visibility guarantees. Also denies `npm publish`, `npm token
+  create/delete`, `npm adduser`, and `npm login` — the credential-
+  surface side of the same problem. The Shai-Hulud worm (Sept 2025)
+  infected 500+ packages by harvesting npm tokens from developer
+  machines and using them to publish trojaned versions back to the
+  registry. An agent that can run `npm publish` or mint tokens is
+  one prompt-injection away from being the next propagation hop.
+severity: high
+tags:
+  - supply-chain
+  - npm
+  - yarn
+  - pnpm
+  - shai-hulud
+  - bash
+authors:
+  - github: RonCodes88
+license: Apache-2.0
+compatible_agentlock: ">=0.1.0"
+gate:
+  match:
+    tool: Bash
+    any_command_regex:
+      - '\bnpm\s+(?:install|i|add)\s+(?:[^|;&]*\s+)?(?:https?://|git\+|github:|gist:|gitlab:|bitbucket:|file:)'
+      - '\bnpm\s+(?:install|i|add)\s+(?:[^|;&]*\s+)?[^\s]+\.tgz(?:\b|$)'
+      - '\b(?:yarn|pnpm)\s+(?:add|install)\s+(?:[^|;&]*\s+)?(?:https?://|git\+|github:|gist:|gitlab:|bitbucket:|file:)'
+      - '\b(?:yarn|pnpm)\s+(?:add|install)\s+(?:[^|;&]*\s+)?[^\s]+\.tgz(?:\b|$)'
+      - '\bnpm\s+publish\b'
+      - '\b(?:yarn|pnpm)\s+publish\b'
+      - '\bnpm\s+token\s+(?:create|delete|revoke|list)\b'
+      - '\bnpm\s+adduser\b'
+      - '\bnpm\s+login\b'
+      - '\bnpx\s+(?:[^|;&]*\s+)?(?:https?://|git\+|github:|gist:)'
+      - '\bnpx\s+(?:[^|;&]*\s+)?--package=(?:https?://|git\+|github:)'
+      - '\bnpm\s+(?:install|i|add)\s+(?:[^|;&]*\s+)?--registry(?:=|\s+)'
+      - '\b(?:yarn|pnpm)\s+config\s+set\s+registry\s+'
+  evaluate:
+    - kind: always
+      action: deny
