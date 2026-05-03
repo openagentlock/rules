@@ -1,0 +1,56 @@
+schema_version: 1
+id: exfil.browser-credential-read
+name: Block reads of browser credential / cookie stores and IDE session tokens
+description: |
+  Denies Read tool calls against browser credential stores (Chrome /
+  Chromium / Brave / Edge `Login Data` and `Cookies`, Firefox
+  `key4.db` / `logins.json` / `cookies.sqlite`, Safari
+  `Cookies.binarycookies`) and against IDE-extension session storage
+  that frequently holds OAuth tokens (Slack, Cursor, VS Code, Discord,
+  Signal). These are not "config files" — they are live session
+  databases. An agent that reads them gives the LLM (and any
+  downstream tool call) full impersonation power over the user's
+  active web sessions.
+severity: critical
+tags:
+  - secrets
+  - browser
+  - session
+  - cookies
+  - read
+authors:
+  - github: RonCodes88
+license: Apache-2.0
+compatible_agentlock: ">=0.1.0"
+gate:
+  match:
+    tool: Read
+    any_path_regex:
+      - '(?:^|/)Library/Application Support/Google/Chrome/[^/]+/(?:Login Data|Cookies|Web Data|History|Local State)$'
+      - '(?:^|/)Library/Application Support/Chromium/[^/]+/(?:Login Data|Cookies)$'
+      - '(?:^|/)Library/Application Support/BraveSoftware/Brave-Browser/[^/]+/(?:Login Data|Cookies)$'
+      - '(?:^|/)Library/Application Support/Microsoft Edge/[^/]+/(?:Login Data|Cookies)$'
+      - '(?:^|/)Library/Application Support/Arc/User Data/[^/]+/(?:Login Data|Cookies)$'
+      - '(?:^|/)\.config/google-chrome/[^/]+/(?:Login Data|Cookies)$'
+      - '(?:^|/)\.config/chromium/[^/]+/(?:Login Data|Cookies)$'
+      - '(?:^|/)\.config/microsoft-edge/[^/]+/(?:Login Data|Cookies)$'
+      - '(?:^|/)\.config/BraveSoftware/Brave-Browser/[^/]+/(?:Login Data|Cookies)$'
+      - '(?:^|/)Library/Application Support/Firefox/Profiles/[^/]+/(?:key4\.db|key3\.db|logins\.json|cookies\.sqlite|signedInUser\.json)$'
+      - '(?:^|/)\.mozilla/firefox/[^/]+/(?:key4\.db|key3\.db|logins\.json|cookies\.sqlite|signedInUser\.json)$'
+      - '(?:^|/)Library/Cookies/Cookies\.binarycookies$'
+      - '(?:^|/)Library/Application Support/Slack/Cookies$'
+      - '(?:^|/)Library/Application Support/Slack/storage/'
+      - '(?:^|/)Library/Application Support/discord/Local Storage/'
+      - '(?:^|/)Library/Application Support/discord/Cookies$'
+      - '(?:^|/)Library/Application Support/Signal/sql/db\.sqlite$'
+      - '(?:^|/)Library/Application Support/Cursor/User/globalStorage/'
+      - '(?:^|/)Library/Application Support/Cursor/Local Storage/'
+      - '(?:^|/)Library/Application Support/Code/User/globalStorage/'
+      - '(?:^|/)Library/Application Support/Code/Local Storage/'
+      - '(?:^|/)\.config/Code/User/globalStorage/'
+      - '(?:^|/)\.config/Cursor/User/globalStorage/'
+      - '(?:^|/)Library/Keychains/login\.keychain-db$'
+      - '(?:^|/)Library/Keychains/login\.keychain$'
+  evaluate:
+    - kind: always
+      action: deny

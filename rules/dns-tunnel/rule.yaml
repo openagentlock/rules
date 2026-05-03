@@ -1,0 +1,39 @@
+schema_version: 1
+id: exfil.dns-tunnel
+name: Block DNS-tunneling exfiltration via dig / nslookup / host / ping
+description: |
+  Denies bash invocations of DNS resolution tools whose query name
+  contains a long base64/hex-shaped subdomain label, or that wrap a
+  `base64`/`xxd` subshell into the query. This is the exact shape
+  CVE-2025-55284 (CVSS 7.1) used to exfiltrate secrets from Claude
+  Code: prompt-injected agents leveraged auto-approved utilities like
+  `ping`, `nslookup`, and `dig` to silently leak `.env` contents by
+  encoding them as DNS subdomain labels. DLP egress filters miss the
+  shape because DNS is "always allowed".
+severity: critical
+tags:
+  - exfil
+  - dns
+  - cve-2025-55284
+  - bash
+authors:
+  - github: RonCodes88
+license: Apache-2.0
+compatible_agentlock: ">=0.1.0"
+gate:
+  match:
+    tool: Bash
+    any_command_regex:
+      - '\bdig\s+(?:[+@\-][^\s]+\s+)*[A-Za-z0-9+/=_-]{30,}\.[A-Za-z0-9.-]+'
+      - '\bnslookup\s+[A-Za-z0-9+/=_-]{30,}\.[A-Za-z0-9.-]+'
+      - '\bhost\s+[A-Za-z0-9+/=_-]{30,}\.[A-Za-z0-9.-]+'
+      - '\bping\s+(?:-[a-zA-Z0-9]+\s+\S*\s+)*[A-Za-z0-9+/=_-]{30,}\.[A-Za-z0-9.-]+'
+      - '\bdrill\s+[A-Za-z0-9+/=_-]{30,}\.[A-Za-z0-9.-]+'
+      - '\bdig\s+[^|;&]*\$\([^)]*(?:base64|xxd|hexdump|od)\b'
+      - '\bnslookup\s+[^|;&]*\$\([^)]*(?:base64|xxd|hexdump)\b'
+      - '\bping\s+[^|;&]*\$\([^)]*(?:base64|xxd|hexdump)\b'
+      - '\bcurl\s+[^|;&]*\$\([^)]*(?:base64|xxd)\b[^|;&]*\.[a-z]{2,}'
+      - '\bdig\s+[^|;&]*\bTXT\s+[A-Za-z0-9+/=_-]{30,}\.'
+  evaluate:
+    - kind: always
+      action: deny

@@ -1,0 +1,63 @@
+schema_version: 1
+id: exfil.cloud-cred-read
+name: Block reads of cloud-SDK credential stores (gcloud, Azure, Docker, Terraform)
+description: |
+  Denies Read tool calls against the credential stores of cloud SDKs
+  not already covered by `rogue.secret-read`: gcloud
+  (`application_default_credentials.json`, `legacy_credentials/`),
+  Azure CLI (`accessTokens.json`, `azureProfile.json`,
+  `msal_token_cache.*`), Docker (`config.json`, which holds registry
+  auth), GCP service-account JSON keys, Terraform credentials and
+  state files (state can hold rendered secrets), Helm registry
+  credentials, and Databricks tokens. Once the agent reads any of
+  these, the tokens are in its context and can flow to any downstream
+  tool call — the exact failure mode the Supabase MCP service-role
+  incident demonstrated at scale.
+severity: critical
+tags:
+  - secrets
+  - cloud
+  - gcloud
+  - azure
+  - docker
+  - terraform
+  - read
+authors:
+  - github: RonCodes88
+license: Apache-2.0
+compatible_agentlock: ">=0.1.0"
+gate:
+  match:
+    tool: Read
+    any_path_regex:
+      - '(?:^|/)\.config/gcloud/application_default_credentials\.json$'
+      - '(?:^|/)\.config/gcloud/access_tokens\.db$'
+      - '(?:^|/)\.config/gcloud/credentials\.db$'
+      - '(?:^|/)\.config/gcloud/legacy_credentials/'
+      - '(?:^|/)\.config/gcloud/active_config$'
+      - '(?:^|/)\.azure/accessTokens\.json$'
+      - '(?:^|/)\.azure/azureProfile\.json$'
+      - '(?:^|/)\.azure/msal_token_cache\.(?:json|bin)$'
+      - '(?:^|/)\.azure/service_principal_entries\.json$'
+      - '(?:^|/)\.docker/config\.json$'
+      - '(?:^|/)gcp[._-]?service[._-]?account[^/]*\.json$'
+      - '(?:^|/)service[._-]?account[._-]?key[^/]*\.json$'
+      - '(?:^|/)service[._-]?account\.json$'
+      - '(?:^|/)\.terraform\.d/credentials\.tfrc\.json$'
+      - '(?:^|/)terraform\.tfstate(?:\.backup)?$'
+      - '(?:^|/)\.terraform/terraform\.tfstate$'
+      - '(?:^|/)\.helm/repository/repositories\.yaml$'
+      - '(?:^|/)\.helm/registry/config\.json$'
+      - '(?:^|/)\.databrickscfg$'
+      - '(?:^|/)\.databricks/token-cache\.json$'
+      - '(?:^|/)\.snowflake/connections\.toml$'
+      - '(?:^|/)\.config/cloudflared/cert\.pem$'
+      - '(?:^|/)\.config/heroku/config\.json$'
+      - '(?:^|/)\.config/digitalocean/config\.yaml$'
+      - '(?:^|/)\.fly/config\.yml$'
+      - '(?:^|/)\.config/op/config$'
+      - '(?:^|/)\.gh/hosts\.yml$'
+      - '(?:^|/)\.config/gh/hosts\.yml$'
+  evaluate:
+    - kind: always
+      action: deny
