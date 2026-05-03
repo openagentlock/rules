@@ -1,0 +1,42 @@
+schema_version: 1
+id: rogue.docker-prune
+name: Block destructive Docker prune and bulk-removal commands
+description: |
+  Denies bash docker invocations that bulk-delete containers, images,
+  networks, or volumes: `docker system prune -a -f`, `docker volume
+  prune -f`, `docker rm -f $(docker ps -aq)`, `docker rmi -f`, and
+  `docker compose down -v`. Volumes hold persistent application state
+  (databases, uploads, caches); deleting them is data loss disguised
+  as "cleanup". Agents reaching for `prune -a -f` to free disk space
+  is the most common shape in this category.
+severity: high
+tags:
+  - docker
+  - container
+  - destructive
+  - bash
+authors:
+  - github: RonCodes88
+license: Apache-2.0
+compatible_agentlock: ">=0.1.0"
+gate:
+  match:
+    tool: Bash
+    any_command_regex:
+      - '\bdocker\s+system\s+prune\b'
+      - '\bdocker\s+volume\s+prune\b'
+      - '\bdocker\s+image\s+prune\s+(?:[^|;&]*\s+)?-a\b'
+      - '\bdocker\s+container\s+prune\b'
+      - '\bdocker\s+network\s+prune\b'
+      - '\bdocker\s+builder\s+prune\b'
+      - '\bdocker\s+volume\s+rm\b'
+      - '\bdocker\s+rm\s+(?:[^|;&]*\s+)?-f\s+\$\(docker\s+ps\s+-aq\)'
+      - '\bdocker\s+rmi\s+(?:[^|;&]*\s+)?-f\s+\$\(docker\s+images\s+-q\)'
+      - '\bdocker\s+compose\s+down\s+(?:[^|;&]*\s+)?-v\b'
+      - '\bdocker-compose\s+down\s+(?:[^|;&]*\s+)?-v\b'
+      - '\bdocker\s+compose\s+down\s+(?:[^|;&]*\s+)?--volumes\b'
+      - '\bpodman\s+(?:system|volume|image)\s+prune\b'
+      - '\bpodman\s+volume\s+rm\b'
+  evaluate:
+    - kind: always
+      action: deny

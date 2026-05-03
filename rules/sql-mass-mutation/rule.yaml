@@ -1,0 +1,51 @@
+schema_version: 1
+id: rogue.sql-mass-mutation
+name: Block mass-mutation SQL via psql / mysql / sqlite / mongo / redis
+description: |
+  Denies bash invocations of database CLIs (psql, mysql, sqlite3,
+  mongosh, redis-cli) that execute TRUNCATE, DROP DATABASE/SCHEMA, or
+  unbounded DELETE/UPDATE (no WHERE, or WHERE 1=1 / WHERE true). Also
+  catches Mongo `dropDatabase()` / `deleteMany({})` and Redis
+  `FLUSHALL`/`FLUSHDB`. The Replit AI incident wiped data for 1,200+
+  executives during an active code freeze — one `TRUNCATE` or
+  unbounded `DELETE` against the wrong schema is enough.
+
+  This complements `rogue.destructive-bash` (which only catches
+  literal `DROP TABLE`).
+severity: critical
+tags:
+  - sql
+  - database
+  - postgres
+  - mysql
+  - mongo
+  - redis
+  - destructive
+  - bash
+authors:
+  - github: RonCodes88
+license: Apache-2.0
+compatible_agentlock: ">=0.1.0"
+gate:
+  match:
+    tool: Bash
+    any_command_regex:
+      - '(?i)\bTRUNCATE\s+(?:TABLE\s+)?[a-zA-Z_]'
+      - '(?i)\bDROP\s+DATABASE\b'
+      - '(?i)\bDROP\s+SCHEMA\b'
+      - '(?i)\bDROP\s+(?:USER|ROLE)\b'
+      - '(?i)\bDELETE\s+FROM\s+[a-zA-Z_][a-zA-Z0-9_."]*\s*;'
+      - '(?i)\bDELETE\s+FROM\s+[a-zA-Z_][a-zA-Z0-9_."]*\s+WHERE\s+1\s*=\s*1'
+      - '(?i)\bDELETE\s+FROM\s+[a-zA-Z_][a-zA-Z0-9_."]*\s+WHERE\s+TRUE\b'
+      - '(?i)\bUPDATE\s+[a-zA-Z_][a-zA-Z0-9_."]*\s+SET\s+[^;]*\s+WHERE\s+1\s*=\s*1'
+      - '(?i)\bUPDATE\s+[a-zA-Z_][a-zA-Z0-9_."]*\s+SET\s+[^;]*\s+WHERE\s+TRUE\b'
+      - '\bdropDatabase\s*\('
+      - '\bdeleteMany\s*\(\s*\{\s*\}\s*\)'
+      - '\bremove\s*\(\s*\{\s*\}\s*\)'
+      - '\bredis-cli\s+(?:[^|;&]*\s+)?FLUSHALL\b'
+      - '\bredis-cli\s+(?:[^|;&]*\s+)?FLUSHDB\b'
+      - '(?i)\bFLUSHALL\b'
+      - '(?i)\bFLUSHDB\b'
+  evaluate:
+    - kind: always
+      action: deny

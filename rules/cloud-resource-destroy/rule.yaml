@@ -1,0 +1,52 @@
+schema_version: 1
+id: rogue.cloud-resource-destroy
+name: Block destructive cloud-CLI deletes (AWS, GCP, Azure)
+description: |
+  Denies bash invocations of cloud-provider CLIs that destroy
+  production-bearing resources while bypassing confirmation prompts:
+  `aws s3 rb --force`, `aws ec2 terminate-instances`, `aws rds
+  delete-db-instance --skip-final-snapshot`, `aws s3api delete-bucket`,
+  `aws iam delete-*`, `gcloud … delete --quiet`, and `az group delete
+  --yes`. Each shape removes the human-confirmation gate the cloud SDK
+  normally enforces — exactly the shortcut an AI agent reaches for when
+  it interprets cleanup as the right next action.
+severity: critical
+tags:
+  - aws
+  - gcp
+  - azure
+  - cloud
+  - destructive
+  - bash
+authors:
+  - github: RonCodes88
+license: Apache-2.0
+compatible_agentlock: ">=0.1.0"
+gate:
+  match:
+    tool: Bash
+    any_command_regex:
+      - '\baws\s+s3\s+rb\s+(?:[^|;&]*\s+)?--force\b'
+      - '\baws\s+s3\s+rm\s+(?:[^|;&]*\s+)?--recursive\s+s3://'
+      - '\baws\s+s3api\s+delete-bucket\b'
+      - '\baws\s+ec2\s+terminate-instances\b'
+      - '\baws\s+rds\s+delete-db-instance\b'
+      - '\baws\s+rds\s+delete-db-cluster\b'
+      - '\baws\s+rds\s+delete-db-snapshot\b'
+      - '\baws\s+dynamodb\s+delete-table\b'
+      - '\baws\s+iam\s+delete-(?:user|role|policy|access-key|group)\b'
+      - '\baws\s+kms\s+(?:schedule-key-deletion|disable-key)\b'
+      - '\baws\s+secretsmanager\s+delete-secret\b'
+      - '\baws\s+ssm\s+delete-parameter(?:s)?\b'
+      - '\baws\s+ecr\s+(?:delete-repository|batch-delete-image)\b'
+      - '\baws\s+lambda\s+delete-function\b'
+      - '\baws\s+cloudformation\s+delete-stack\b'
+      - '\bgcloud\s+(?:[^|;&]*\s+)?delete\s+(?:[^|;&]*\s+)?--quiet\b'
+      - '\bgcloud\s+(?:[^|;&]*\s+)?delete\s+(?:[^|;&]*\s+)?-q\b'
+      - '\bgcloud\s+projects\s+delete\b'
+      - '\baz\s+group\s+delete\s+(?:[^|;&]*\s+)?--yes\b'
+      - '\baz\s+group\s+delete\s+(?:[^|;&]*\s+)?-y\b'
+      - '\baz\s+(?:vm|disk|sql|storage)\s+delete\s+(?:[^|;&]*\s+)?--yes\b'
+  evaluate:
+    - kind: always
+      action: deny

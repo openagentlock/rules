@@ -1,0 +1,45 @@
+schema_version: 1
+id: rogue.k8s-destructive
+name: Block destructive kubectl and helm operations
+description: |
+  Denies bash kubectl invocations that wipe namespaces, delete every
+  resource of a kind, drop persistent volumes, remove secrets, force-
+  drain nodes, or scale down to zero — and `helm uninstall`. Deleting
+  a Kubernetes Secret is immediate and irreversible: any workload
+  depending on it is now in an invalid state, which is one of the
+  fastest agent-driven outage shapes. PVs hold data; namespaces hold
+  everything in them. An agent should never delete these without an
+  explicit human approval.
+severity: critical
+tags:
+  - kubernetes
+  - k8s
+  - helm
+  - destructive
+  - bash
+authors:
+  - github: RonCodes88
+license: Apache-2.0
+compatible_agentlock: ">=0.1.0"
+gate:
+  match:
+    tool: Bash
+    any_command_regex:
+      - '\bkubectl\s+delete\s+(?:[^|;&]*\s+)?--all\b'
+      - '\bkubectl\s+delete\s+(?:[^|;&]*\s+)?--all-namespaces\b'
+      - '\bkubectl\s+delete\s+ns(?:amespace)?\s+'
+      - '\bkubectl\s+delete\s+pv\b'
+      - '\bkubectl\s+delete\s+(?:persistentvolume|persistentvolumeclaim|pvc)\b'
+      - '\bkubectl\s+delete\s+secret(?:s)?\s+'
+      - '\bkubectl\s+delete\s+(?:[^|;&]*\s+)?--force\s+(?:[^|;&]*\s+)?--grace-period=0\b'
+      - '\bkubectl\s+delete\s+(?:crd|customresourcedefinition)\b'
+      - '\bkubectl\s+drain\s+(?:[^|;&]*\s+)?--force\b'
+      - '\bkubectl\s+(?:scale|patch)\s+(?:[^|;&]*\s+)?--replicas=0\b'
+      - '\bkubectl\s+exec\s+(?:[^|;&]*\s+)?--\s*rm\s+-rf\b'
+      - '\bhelm\s+uninstall\b'
+      - '\bhelm\s+delete\s+'
+      - '\bk3s\s+(?:[^|;&]*\s+)?uninstall\b'
+      - '\bkubeadm\s+reset\b'
+  evaluate:
+    - kind: always
+      action: deny
