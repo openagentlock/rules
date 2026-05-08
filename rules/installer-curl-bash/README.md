@@ -35,6 +35,7 @@ For an AI agent: the install instruction often comes from a poisoned README, web
 - `curl -o file https://…` *without* a follow-up `&& bash file` is **not** caught — fetch alone is fine.
 - `curl https://…` (output to stdout, no pipe) is **not** caught.
 - A multi-step debugging session that downloads then inspects a file before running is **not** caught — the rule requires the chained execution.
+- `curl … | python3 - <<'PY'` is **not** caught. In that shape the Python program is supplied by the local heredoc; the curl stream is data, not fetched code being executed.
 
 ## Overlap notes
 
