@@ -2,39 +2,76 @@ schema_version: 1
 id: rogue.cron-persistence
 name: Block cron-based persistence installs
 description: |
-  Denies bash invocations that install or modify cron jobs: `crontab -`
-  (read from stdin), `crontab <file>`, the canonical
-  `(crontab -l; echo "<entry>") | crontab -` install pattern, redirects
-  into `/etc/cron.*` or `/var/spool/cron/`, and `systemd-run --on-*`
-  one-shot timers. MITRE ATT&CK T1053.003 catalogs cron as the most
-  common Linux/macOS persistence technique; the Shai-Hulud npm worm
-  (Sept 2025) used postinstall scripts to install cron jobs that
-  re-fetched its C2 payload every minute.
+  Denies installation or modification of cron jobs and timer-based
+  persistence: `crontab -` (read from stdin), `crontab <file>`, the
+  canonical `(crontab -l; echo "<entry>") | crontab -` install pattern,
+  redirects/writes into `/etc/cron.*` or `/var/spool/cron/`, and
+  `systemd-run --on-*` one-shot timers. MITRE ATT&CK T1053.003
+  catalogs cron as the most common Linux/macOS persistence
+  technique; the Shai-Hulud npm worm (Sept 2025) used postinstall
+  scripts to install cron jobs that re-fetched its C2 payload every
+  minute.
 severity: high
 tags:
   - persistence
   - cron
   - mitre-t1053
   - bash
+  - shell
+  - mcp
+  - write
 authors:
   - github: RonCodes88
 license: Apache-2.0
 compatible_agentlock: ">=0.1.0"
+# any_of arms span both classes of cron persistence:
+#   1. Shell-side: `crontab -`, `systemd-run --on-calendar`, `at`,
+#      redirects into /etc/cron.d/* or /var/spool/cron/.
+#        tool: Bash                      - Claude Code, Codex CLI
+#        tool: Shell                     - Cursor (preToolUse + beforeShellExecution)
+#        tool_prefix: mcp_               - MCP shell-exec servers
+#
+#   2. Direct file-edit to cron drop-ins / systemd timer units:
+#        tool: Write / Edit / MultiEdit  - Claude Code
+#        tool: Write                     - Cursor preToolUse
+#        tool_prefix: mcp_               - MCP filesystem write servers
 gate:
   match:
-    tool: Bash
-    any_command_regex:
-      - '\bcrontab\s+-\s*$'
-      - '\bcrontab\s+-\s*<'
-      - '\bcrontab\s+/[^\s]+'
-      - '\bcrontab\s+[^\s|;&-][^\s]*\.(?:cron|txt)\b'
-      - '\)\s*\|\s*crontab\s+-'
-      - '\}\s*\|\s*crontab\s+-'
-      - '\becho\s+[^|]*\|\s*crontab\s+-'
-      - '(?:>|>>)\s*/etc/cron(?:tab|\.(?:hourly|daily|weekly|monthly|d)/)'
-      - '(?:>|>>)\s*/var/spool/cron/'
-      - '\bsystemd-run\s+(?:[^|;&]*\s+)?--on-(?:calendar|active|boot|startup|unit-active|unit-inactive)\b'
-      - '\bat\s+(?:now\s+\+|-f\s+|-t\s+)'
+    any_of:
+      - tool: Bash
+        any_command_regex: &cron_persistence_regex
+          - '\bcrontab\s+-\s*$'
+          - '\bcrontab\s+-\s*<'
+          - '\bcrontab\s+/[^\s]+'
+          - '\bcrontab\s+[^\s|;&-][^\s]*\.(?:cron|txt)\b'
+          - '\)\s*\|\s*crontab\s+-'
+          - '\}\s*\|\s*crontab\s+-'
+          - '\becho\s+[^|]*\|\s*crontab\s+-'
+          - '(?:>|>>)\s*/etc/cron(?:tab|\.(?:hourly|daily|weekly|monthly|d)/)'
+          - '(?:>|>>)\s*/var/spool/cron/'
+          - '\bsystemd-run\s+(?:[^|;&]*\s+)?--on-(?:calendar|active|boot|startup|unit-active|unit-inactive)\b'
+          # `at` scheduling: positive match for time-spec args (now, midnight,
+          # HH:MM, tomorrow, …) and scheduling flags (-f file, -t time, -q
+          # queue, -m, -M, -v). Excludes read-only flags (-l/-d/-h/-c/-r/-V)
+          # by enumerating the accept-list — RE2 (used by the agentlock daemon)
+          # has no lookahead.
+          - '\bat\s+(?:[^-\s]|-[fmtqMv])\S*'
+      - tool: Shell
+        any_command_regex: *cron_persistence_regex
+      - tool_prefix: mcp_
+        any_command_regex: *cron_persistence_regex
+      - tool: Write
+        any_path_regex: &cron_persistence_path_regex
+          - '^/etc/cron(?:tab$|\.(?:hourly|daily|weekly|monthly|d)/)'
+          - '^/var/spool/cron/'
+          - '^/etc/systemd/system/[^/]*\.timer$'
+          - '(?:^|/)\.config/systemd/user/[^/]*\.timer$'
+      - tool: Edit
+        any_path_regex: *cron_persistence_path_regex
+      - tool: MultiEdit
+        any_path_regex: *cron_persistence_path_regex
+      - tool_prefix: mcp_
+        any_path_regex: *cron_persistence_path_regex
   evaluate:
     - kind: always
       action: deny
