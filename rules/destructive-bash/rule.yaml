@@ -9,21 +9,37 @@ description: |
 severity: high
 tags:
   - bash
+  - shell
+  - mcp
   - destructive
   - filesystem
 authors:
   - github: openagentlock
 license: Apache-2.0
 compatible_agentlock: ">=0.1.0"
+# any_of arms span every wire shape we see across harnesses:
+#   tool: Bash         - Claude Code, Codex CLI
+#   tool: Shell        - Cursor preToolUse + beforeShellExecution synthetic
+#   tool_prefix: mcp_  - Claude Desktop (mcp__ double-underscore) and
+#                        Gemini CLI (mcp_ single-underscore). Single-
+#                        underscore prefix is a strict superset, so this
+#                        one arm catches both wire shapes (whether the
+#                        user wired an MCP shell-exec server or anything
+#                        else MCP-namespaced that takes a `command` input).
 gate:
   match:
-    tool: Bash
-    any_command_regex:
-      - 'rm\s+-rf?\s+/'
-      - 'DROP\s+TABLE'
-      - 'dd\s+if=.*of=/dev/sd'
-      - 'mkfs\.'
-      - 'curl\s+[^|]*\|\s*(ba)?sh'
+    any_of:
+      - tool: Bash
+        any_command_regex: &destructive_bash_regex
+          - 'rm\s+-rf?\s+/'
+          - '(?i)DROP\s+TABLE'
+          - 'dd\s+if=.*of=/dev/(?:sd|nvme|vd|xvd|hd|mmcblk|loop)'
+          - 'mkfs\.'
+          - 'curl\s+[^|]*\|\s*(ba)?sh'
+      - tool: Shell
+        any_command_regex: *destructive_bash_regex
+      - tool_prefix: mcp_
+        any_command_regex: *destructive_bash_regex
   evaluate:
     - kind: always
       action: deny

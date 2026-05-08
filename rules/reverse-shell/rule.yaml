@@ -14,28 +14,39 @@ tags:
   - reverse-shell
   - rce
   - bash
+  - shell
+  - mcp
   - mitre-t1059
 authors:
   - github: RonCodes88
 license: Apache-2.0
 compatible_agentlock: ">=0.1.0"
+# any_of arms span every wire shape we see across harnesses:
+#   tool: Bash         - Claude Code, Codex CLI
+#   tool: Shell        - Cursor preToolUse + beforeShellExecution synthetic
+#   tool_prefix: mcp_  - Claude Desktop (mcp__) + Gemini (mcp_) MCP shell servers.
 gate:
   match:
-    tool: Bash
-    any_command_regex:
-      - '\b(?:bash|sh|zsh|dash|ksh)\s+-i\s*[<>]&?\s*/dev/(?:tcp|udp)/'
-      - '\bexec\s+\d*<>\s*/dev/(?:tcp|udp)/'
-      - '\bnc(?:at)?\s+(?:[^|;&]*\s+)?-e\s+'
-      - '\bncat\s+(?:[^|;&]*\s+)?--exec(?:\s|=)'
-      - '\bsocat\s+(?:[^|;&]*\s+)?(?:exec|system):'
-      - '\bsocat\s+(?:[^|;&]*\s+)?TCP[46]?:[^\s]+\s+EXEC:'
-      - '\bmkfifo\s+[^|;&]*&&\s*[^|;&]*\|\s*(?:bash|sh|zsh)'
-      - '\bpython3?\s+-c\s+["''][^"'']*socket\.socket\([^"'']*'
-      - '\bperl\s+-e\s+["''][^"'']*socket'
-      - '\bphp\s+-r\s+["''][^"'']*fsockopen'
-      - '\bruby\s+-r?e?\s*["''][^"'']*TCPSocket'
-      - '\bawk\s+''[^'']*\|\s*&\s*"/inet/tcp/'
-      - '\bbusybox\s+nc\s+(?:[^|;&]*\s+)?-e\b'
+    any_of:
+      - tool: Bash
+        any_command_regex: &reverse_shell_regex
+          - '\b(?:bash|sh|zsh|dash|ksh)\s+-i\s*[<>]&?\s*/dev/(?:tcp|udp)/'
+          - '\bexec\s+\d*<>\s*/dev/(?:tcp|udp)/'
+          - '\bnc(?:at)?\s+(?:[^|;&]*\s+)?-e\s+'
+          - '\bncat\s+(?:[^|;&]*\s+)?--exec(?:\s|=)'
+          - '\bsocat\s+(?:[^|;&]*\s+)?(?:exec|system):'
+          - '\bsocat\s+(?:[^|;&]*\s+)?TCP[46]?:[^\s]+\s+EXEC:'
+          - '\bmkfifo\s+[^|;&]*&&\s*[^|;&]*\|\s*(?:bash|sh|zsh)'
+          - '\bpython3?\s+-c\s+["''][^"'']*socket\.socket\([^"'']*'
+          - '\bperl\s+-e\s+["''][^"'']*socket'
+          - '\bphp\s+-r\s+["''][^"'']*fsockopen'
+          - '\bruby\s+-r?e?\s*["''][^"'']*TCPSocket'
+          - '\bawk\s+''[^'']*\|\s*&\s*"/inet/tcp/'
+          - '\bbusybox\s+nc\s+(?:[^|;&]*\s+)?-e\b'
+      - tool: Shell
+        any_command_regex: *reverse_shell_regex
+      - tool_prefix: mcp_
+        any_command_regex: *reverse_shell_regex
   evaluate:
     - kind: always
       action: deny

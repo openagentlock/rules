@@ -13,27 +13,40 @@ tags:
   - secrets
   - filesystem
   - read
+  - mcp
 authors:
   - github: openagentlock
 license: Apache-2.0
 compatible_agentlock: ">=0.1.0"
+# any_of arms span every wire shape we see across harnesses:
+#   tool: Read         - Claude Code, Cursor preToolUse
+#   tool_prefix: mcp_  - Claude Desktop (mcp__filesystem__read_file etc.) AND
+#                        Gemini CLI (mcp_filesystem_read_file). Single-
+#                        underscore prefix is a strict superset of double,
+#                        so this one arm covers both wire shapes.
+# NOTE: Codex CLI has NO `Read` tool — file reads do not fire PreToolUse
+# (verified against OpenAI Codex hooks docs). Coverage on Codex requires
+# the user to wire an MCP filesystem server.
 gate:
   match:
-    tool: Read
-    any_path_regex:
-      - '(^|/)\.env(\.[^/]+)?$'
-      - '(^|/)\.envrc$'
-      - '(^|/)\.aws/credentials$'
-      - '(^|/)\.aws/config$'
-      - '(^|/)\.ssh/id_(rsa|ed25519|ecdsa|dsa)(\.pub)?$'
-      - '(^|/)\.ssh/identity$'
-      - '(^|/)\.npmrc$'
-      - '(^|/)\.pypirc$'
-      - '(^|/)\.netrc$'
-      - '(^|/)\.gnupg/.*'
-      - '(^|/)kubeconfig$'
-      - '(^|/)\.kube/config$'
-      - '(^|/)gha?-creds\.json$'
+    any_of:
+      - tool: Read
+        any_path_regex: &secret_read_path_regex
+          - '(^|/)\.env(\.[^/]+)?$'
+          - '(^|/)\.envrc$'
+          - '(^|/)\.aws/credentials$'
+          - '(^|/)\.aws/config$'
+          - '(^|/)\.ssh/id_(rsa|ed25519|ecdsa|dsa)(\.pub)?$'
+          - '(^|/)\.ssh/identity$'
+          - '(^|/)\.npmrc$'
+          - '(^|/)\.pypirc$'
+          - '(^|/)\.netrc$'
+          - '(^|/)\.gnupg/.*'
+          - '(^|/)kubeconfig$'
+          - '(^|/)\.kube/config$'
+          - '(^|/)gha?-creds\.json$'
+      - tool_prefix: mcp_
+        any_path_regex: *secret_read_path_regex
   evaluate:
     - kind: always
       action: deny

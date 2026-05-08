@@ -17,29 +17,40 @@ tags:
   - helm
   - destructive
   - bash
+  - shell
+  - mcp
 authors:
   - github: RonCodes88
 license: Apache-2.0
 compatible_agentlock: ">=0.1.0"
+# any_of arms span every wire shape we see across harnesses:
+#   tool: Bash         - Claude Code, Codex CLI
+#   tool: Shell        - Cursor preToolUse + beforeShellExecution synthetic
+#   tool_prefix: mcp_  - Claude Desktop (mcp__) + Gemini (mcp_) MCP shell servers.
 gate:
   match:
-    tool: Bash
-    any_command_regex:
-      - '\bkubectl\s+delete\s+(?:[^|;&]*\s+)?--all\b'
-      - '\bkubectl\s+delete\s+(?:[^|;&]*\s+)?--all-namespaces\b'
-      - '\bkubectl\s+delete\s+ns(?:amespace)?\s+'
-      - '\bkubectl\s+delete\s+pv\b'
-      - '\bkubectl\s+delete\s+(?:persistentvolume|persistentvolumeclaim|pvc)\b'
-      - '\bkubectl\s+delete\s+secret(?:s)?\s+'
-      - '\bkubectl\s+delete\s+(?:[^|;&]*\s+)?--force\s+(?:[^|;&]*\s+)?--grace-period=0\b'
-      - '\bkubectl\s+delete\s+(?:crd|customresourcedefinition)\b'
-      - '\bkubectl\s+drain\s+(?:[^|;&]*\s+)?--force\b'
-      - '\bkubectl\s+(?:scale|patch)\s+(?:[^|;&]*\s+)?--replicas=0\b'
-      - '\bkubectl\s+exec\s+(?:[^|;&]*\s+)?--\s*rm\s+-rf\b'
-      - '\bhelm\s+uninstall\b'
-      - '\bhelm\s+delete\s+'
-      - '\bk3s\s+(?:[^|;&]*\s+)?uninstall\b'
-      - '\bkubeadm\s+reset\b'
+    any_of:
+      - tool: Bash
+        any_command_regex: &k8s_destructive_regex
+          - '\bkubectl\s+delete\s+(?:[^|;&]*\s+)?--all\b'
+          - '\bkubectl\s+delete\s+(?:[^|;&]*\s+)?--all-namespaces\b'
+          - '\bkubectl\s+delete\s+ns(?:amespace)?\s+'
+          - '\bkubectl\s+delete\s+pv\b'
+          - '\bkubectl\s+delete\s+(?:persistentvolume|persistentvolumeclaim|pvc)\b'
+          - '\bkubectl\s+delete\s+secret(?:s)?\s+'
+          - '\bkubectl\s+delete\s+(?:[^|;&]*\s+)?--force\s+(?:[^|;&]*\s+)?--grace-period=0\b'
+          - '\bkubectl\s+delete\s+(?:crd|customresourcedefinition)\b'
+          - '\bkubectl\s+drain\s+(?:[^|;&]*\s+)?--force\b'
+          - '\bkubectl\s+(?:scale|patch)\s+(?:[^|;&]*\s+)?--replicas=0\b'
+          - '\bkubectl\s+exec\s+(?:[^|;&]*\s+)?--\s*rm\s+-rf\b'
+          - '\bhelm\s+uninstall\b'
+          - '\bhelm\s+delete\s+'
+          - '\bk3s\s+(?:[^|;&]*\s+)?uninstall\b'
+          - '\bkubeadm\s+reset\b'
+      - tool: Shell
+        any_command_regex: *k8s_destructive_regex
+      - tool_prefix: mcp_
+        any_command_regex: *k8s_destructive_regex
   evaluate:
     - kind: always
       action: deny

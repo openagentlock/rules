@@ -22,42 +22,50 @@ tags:
   - docker
   - terraform
   - read
+  - mcp
 authors:
   - github: RonCodes88
 license: Apache-2.0
 compatible_agentlock: ">=0.1.0"
+# any_of arms span every wire shape we see across harnesses:
+#   tool: Read         - Claude Code, Cursor preToolUse
+#   tool_prefix: mcp_  - Claude Desktop (mcp__) + Gemini (mcp_) MCP filesystem servers.
+# NOTE: Codex CLI has NO `Read` tool (file reads bypass PreToolUse).
 gate:
   match:
-    tool: Read
-    any_path_regex:
-      - '(?:^|/)\.config/gcloud/application_default_credentials\.json$'
-      - '(?:^|/)\.config/gcloud/access_tokens\.db$'
-      - '(?:^|/)\.config/gcloud/credentials\.db$'
-      - '(?:^|/)\.config/gcloud/legacy_credentials/'
-      - '(?:^|/)\.config/gcloud/active_config$'
-      - '(?:^|/)\.azure/accessTokens\.json$'
-      - '(?:^|/)\.azure/azureProfile\.json$'
-      - '(?:^|/)\.azure/msal_token_cache\.(?:json|bin)$'
-      - '(?:^|/)\.azure/service_principal_entries\.json$'
-      - '(?:^|/)\.docker/config\.json$'
-      - '(?:^|/)gcp[._-]?service[._-]?account[^/]*\.json$'
-      - '(?:^|/)service[._-]?account[._-]?key[^/]*\.json$'
-      - '(?:^|/)service[._-]?account\.json$'
-      - '(?:^|/)\.terraform\.d/credentials\.tfrc\.json$'
-      - '(?:^|/)terraform\.tfstate(?:\.backup)?$'
-      - '(?:^|/)\.terraform/terraform\.tfstate$'
-      - '(?:^|/)\.helm/repository/repositories\.yaml$'
-      - '(?:^|/)\.helm/registry/config\.json$'
-      - '(?:^|/)\.databrickscfg$'
-      - '(?:^|/)\.databricks/token-cache\.json$'
-      - '(?:^|/)\.snowflake/connections\.toml$'
-      - '(?:^|/)\.config/cloudflared/cert\.pem$'
-      - '(?:^|/)\.config/heroku/config\.json$'
-      - '(?:^|/)\.config/digitalocean/config\.yaml$'
-      - '(?:^|/)\.fly/config\.yml$'
-      - '(?:^|/)\.config/op/config$'
-      - '(?:^|/)\.gh/hosts\.yml$'
-      - '(?:^|/)\.config/gh/hosts\.yml$'
+    any_of:
+      - tool: Read
+        any_path_regex: &cloud_cred_read_path_regex
+          - '(?:^|/)\.config/gcloud/application_default_credentials\.json$'
+          - '(?:^|/)\.config/gcloud/access_tokens\.db$'
+          - '(?:^|/)\.config/gcloud/credentials\.db$'
+          - '(?:^|/)\.config/gcloud/legacy_credentials/'
+          - '(?:^|/)\.config/gcloud/active_config$'
+          - '(?:^|/)\.azure/accessTokens\.json$'
+          - '(?:^|/)\.azure/azureProfile\.json$'
+          - '(?:^|/)\.azure/msal_token_cache\.(?:json|bin)$'
+          - '(?:^|/)\.azure/service_principal_entries\.json$'
+          - '(?:^|/)\.docker/config\.json$'
+          - '(?:^|/)gcp[._-]?service[._-]?account[^/]*\.json$'
+          - '(?:^|/)service[._-]?account[._-]?key[^/]*\.json$'
+          - '(?:^|/)service[._-]?account\.json$'
+          - '(?:^|/)\.terraform\.d/credentials\.tfrc\.json$'
+          - '(?:^|/)terraform\.tfstate(?:\.backup)?$'
+          - '(?:^|/)\.terraform/terraform\.tfstate$'
+          - '(?:^|/)\.helm/repository/repositories\.yaml$'
+          - '(?:^|/)\.helm/registry/config\.json$'
+          - '(?:^|/)\.databrickscfg$'
+          - '(?:^|/)\.databricks/token-cache\.json$'
+          - '(?:^|/)\.snowflake/connections\.toml$'
+          - '(?:^|/)\.config/cloudflared/cert\.pem$'
+          - '(?:^|/)\.config/heroku/config\.json$'
+          - '(?:^|/)\.config/digitalocean/config\.yaml$'
+          - '(?:^|/)\.fly/config\.yml$'
+          - '(?:^|/)\.config/op/config$'
+          - '(?:^|/)\.gh/hosts\.yml$'
+          - '(?:^|/)\.config/gh/hosts\.yml$'
+      - tool_prefix: mcp_
+        any_path_regex: *cloud_cred_read_path_regex
   evaluate:
     - kind: always
       action: deny

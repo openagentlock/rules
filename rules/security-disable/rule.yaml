@@ -17,41 +17,52 @@ tags:
   - defence-evasion
   - mitre-ta0005
   - bash
+  - shell
+  - mcp
 authors:
   - github: RonCodes88
 license: Apache-2.0
 compatible_agentlock: ">=0.1.0"
+# any_of arms span every wire shape we see across harnesses:
+#   tool: Bash         - Claude Code, Codex CLI
+#   tool: Shell        - Cursor preToolUse + beforeShellExecution synthetic
+#   tool_prefix: mcp_  - Claude Desktop (mcp__) + Gemini (mcp_) MCP shell servers.
 gate:
   match:
-    tool: Bash
-    any_command_regex:
-      - '\biptables\s+(?:-t\s+\w+\s+)?-F\b'
-      - '\bip6tables\s+(?:-t\s+\w+\s+)?-F\b'
-      - '\bnft\s+flush\s+ruleset\b'
-      - '\bufw\s+disable\b'
-      - '\bsystemctl\s+(?:stop|disable|mask)\s+(?:firewalld|ufw|iptables|nftables)\b'
-      - '\bsetenforce\s+0\b'
-      - '\bsetenforce\s+Permissive\b'
-      - '\baa-disable\b'
-      - '\baa-complain\b'
-      - '\bsystemctl\s+(?:stop|disable|mask)\s+(?:apparmor|auditd|rsyslog|systemd-journald)\b'
-      - '\bauditctl\s+-D\b'
-      - '\bservice\s+auditd\s+stop\b'
-      - '\bcsrutil\s+disable\b'
-      - '\bspctl\s+--master-disable\b'
-      - '\bdefaults\s+write\s+/Library/Preferences/com\.apple\.security'
-      - '\bunset\s+HISTFILE\b'
-      - '\bset\s+\+o\s+history\b'
-      - '\bhistory\s+-c\b'
-      - '\bexport\s+HISTSIZE=0\b'
-      - '\bexport\s+HISTFILE=/dev/null\b'
-      - '\brm\s+(?:-[a-zA-Z]+\s+)?~?/?\.bash_history\b'
-      - '\brm\s+(?:-[a-zA-Z]+\s+)?~?/?\.zsh_history\b'
-      - '\baws\s+cloudtrail\s+(?:stop-logging|delete-trail|put-event-selectors)\b'
-      - '\baws\s+guardduty\s+(?:delete-detector|disable-organization-admin-account)\b'
-      - '\baws\s+config\s+(?:stop-configuration-recorder|delete-configuration-recorder|delete-delivery-channel)\b'
-      - '\baws\s+securityhub\s+(?:disable-security-hub|disassociate-from-administrator-account)\b'
-      - '\bgcloud\s+logging\s+sinks\s+delete\b'
+    any_of:
+      - tool: Bash
+        any_command_regex: &security_disable_regex
+          - '\biptables\s+(?:-t\s+\w+\s+)?-F\b'
+          - '\bip6tables\s+(?:-t\s+\w+\s+)?-F\b'
+          - '\bnft\s+flush\s+ruleset\b'
+          - '\bufw\s+disable\b'
+          - '\bsystemctl\s+(?:stop|disable|mask)\s+(?:firewalld|ufw|iptables|nftables)\b'
+          - '\bsetenforce\s+0\b'
+          - '\bsetenforce\s+Permissive\b'
+          - '\baa-disable\b'
+          - '\baa-complain\b'
+          - '\bsystemctl\s+(?:stop|disable|mask)\s+(?:apparmor|auditd|rsyslog|systemd-journald)\b'
+          - '\bauditctl\s+-D\b'
+          - '\bservice\s+auditd\s+stop\b'
+          - '\bcsrutil\s+disable\b'
+          - '\bspctl\s+--master-disable\b'
+          - '\bdefaults\s+write\s+/Library/Preferences/com\.apple\.security'
+          - '\bunset\s+HISTFILE\b'
+          - '\bset\s+\+o\s+history\b'
+          - '\bhistory\s+-c\b'
+          - '\bexport\s+HISTSIZE=0\b'
+          - '\bexport\s+HISTFILE=/dev/null\b'
+          - '\brm\s+(?:-[a-zA-Z]+\s+)?~?/?\.bash_history\b'
+          - '\brm\s+(?:-[a-zA-Z]+\s+)?~?/?\.zsh_history\b'
+          - '\baws\s+cloudtrail\s+(?:stop-logging|delete-trail|put-event-selectors)\b'
+          - '\baws\s+guardduty\s+(?:delete-detector|disable-organization-admin-account)\b'
+          - '\baws\s+config\s+(?:stop-configuration-recorder|delete-configuration-recorder|delete-delivery-channel)\b'
+          - '\baws\s+securityhub\s+(?:disable-security-hub|disassociate-from-administrator-account)\b'
+          - '\bgcloud\s+logging\s+sinks\s+delete\b'
+      - tool: Shell
+        any_command_regex: *security_disable_regex
+      - tool_prefix: mcp_
+        any_command_regex: *security_disable_regex
   evaluate:
     - kind: always
       action: deny

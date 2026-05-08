@@ -10,21 +10,32 @@ description: |
 severity: high
 tags:
   - bash
+  - shell
+  - mcp
   - eval
   - rce
 authors:
   - github: openagentlock
 license: Apache-2.0
 compatible_agentlock: ">=0.1.0"
+# any_of arms span every wire shape we see across harnesses:
+#   tool: Bash         - Claude Code, Codex CLI
+#   tool: Shell        - Cursor preToolUse + beforeShellExecution synthetic
+#   tool_prefix: mcp_  - Claude Desktop (mcp__) + Gemini (mcp_) MCP shell servers.
 gate:
   match:
-    tool: Bash
-    any_command_regex:
-      - 'python3?\s+-c\s+["''].*(?:exec|eval|__import__|compile)\s*\('
-      - 'node\s+-e\s+["''].*(?:eval|Function|require\s*\(\s*["'']child_process)'
-      - '(?:ruby|perl)\s+-e\s+["''].*(?:eval|exec|system|`)'
-      - '(?:bash|sh|zsh)\s+-c\s+.*\$\((?:curl|wget)\s+'
-      - 'eval\s+["''`]?\$\((?:curl|wget)\s+'
+    any_of:
+      - tool: Bash
+        any_command_regex: &eval_untrusted_regex
+          - 'python3?\s+-c\s+["''].*(?:exec|eval|__import__|compile)\s*\('
+          - 'node\s+-e\s+["''].*(?:eval|Function|require\s*\(\s*["'']child_process)'
+          - '(?:ruby|perl)\s+-e\s+["''].*(?:eval|exec|system|`)'
+          - '(?:bash|sh|zsh)\s+-c\s+.*\$\((?:curl|wget)\s+'
+          - 'eval\s+["''`]?\$\((?:curl|wget)\s+'
+      - tool: Shell
+        any_command_regex: *eval_untrusted_regex
+      - tool_prefix: mcp_
+        any_command_regex: *eval_untrusted_regex
   evaluate:
     - kind: always
       action: deny

@@ -18,27 +18,38 @@ tags:
   - chown
   - mitre-t1222
   - bash
+  - shell
+  - mcp
 authors:
   - github: RonCodes88
 license: Apache-2.0
 compatible_agentlock: ">=0.1.0"
+# any_of arms span every wire shape we see across harnesses:
+#   tool: Bash         - Claude Code, Codex CLI
+#   tool: Shell        - Cursor preToolUse + beforeShellExecution synthetic
+#   tool_prefix: mcp_  - Claude Desktop (mcp__) + Gemini (mcp_) MCP shell servers.
 gate:
   match:
-    tool: Bash
-    any_command_regex:
-      - '\bchmod\s+(?:-R\s+)?0?777\b'
-      - '\bchmod\s+(?:-R\s+)?[0-7]?777\b'
-      - '\bchmod\s+(?:-R\s+)?a\+w\b'
-      - '\bchmod\s+(?:-R\s+)?a=rwx\b'
-      - '\bchmod\s+(?:-R\s+)?o\+w\b'
-      - '\bchmod\s+(?:-R\s+)?(?:u|g|a)\+s\b'
-      - '\bchmod\s+(?:-R\s+)?\+s\b'
-      - '\bchmod\s+(?:-R\s+)?[2467]\d\d\d\b'
-      - '\bchmod\s+(?:-R\s+)?(?:0?666|a\+rw)\s+(?:/etc|/usr|/var|/root|/bin|/sbin|/boot)'
-      - '\bchown\s+-R\s+[^\s]+\s+/(?:etc|usr|bin|sbin|root|boot)(?:/|$|\s)'
-      - '\bchown\s+(?:[^|;&]*\s+)?-R\s+[^\s]+:[^\s]*\s+/'
-      - '\bsetfacl\s+(?:[^|;&]*\s+)?-m\s+(?:o|other):rwx\b'
-      - '\bxattr\s+-d\s+com\.apple\.quarantine\s+'
+    any_of:
+      - tool: Bash
+        any_command_regex: &permission_loosening_regex
+          - '\bchmod\s+(?:-R\s+)?0?777\b'
+          - '\bchmod\s+(?:-R\s+)?[0-7]?777\b'
+          - '\bchmod\s+(?:-R\s+)?a\+w\b'
+          - '\bchmod\s+(?:-R\s+)?a=rwx\b'
+          - '\bchmod\s+(?:-R\s+)?o\+w\b'
+          - '\bchmod\s+(?:-R\s+)?(?:u|g|a)\+s\b'
+          - '\bchmod\s+(?:-R\s+)?\+s\b'
+          - '\bchmod\s+(?:-R\s+)?[2467]\d\d\d\b'
+          - '\bchmod\s+(?:-R\s+)?(?:0?666|a\+rw)\s+(?:/etc|/usr|/var|/root|/bin|/sbin|/boot)'
+          - '\bchown\s+-R\s+[^\s]+\s+/(?:etc|usr|bin|sbin|root|boot)(?:/|$|\s)'
+          - '\bchown\s+(?:[^|;&]*\s+)?-R\s+[^\s]+:[^\s]*\s+/'
+          - '\bsetfacl\s+(?:[^|;&]*\s+)?-m\s+(?:o|other):rwx\b'
+          - '\bxattr\s+-d\s+com\.apple\.quarantine\s+'
+      - tool: Shell
+        any_command_regex: *permission_loosening_regex
+      - tool_prefix: mcp_
+        any_command_regex: *permission_loosening_regex
   evaluate:
     - kind: always
       action: deny

@@ -12,16 +12,27 @@ tags:
   - git
   - destructive
   - bash
+  - shell
+  - mcp
 authors:
   - github: openagentlock
 license: Apache-2.0
 compatible_agentlock: ">=0.1.0"
+# any_of arms span every wire shape we see across harnesses:
+#   tool: Bash         - Claude Code, Codex CLI
+#   tool: Shell        - Cursor preToolUse + beforeShellExecution synthetic
+#   tool_prefix: mcp_  - Claude Desktop (mcp__) + Gemini (mcp_) MCP shell servers.
 gate:
   match:
-    tool: Bash
-    any_command_regex:
-      - 'git\s+push\s+(?:[^|;&]*\s+)?(?:--force-with-lease|--force|-f\b)\s+\S+\s+(main|master|develop|release(/[^\s]+)?)'
-      - 'git\s+push\s+(?:[^|;&]*\s+)?\+(main|master|develop|release(/[^\s]+)?)'
+    any_of:
+      - tool: Bash
+        any_command_regex: &git_force_push_regex
+          - 'git\s+push\s+(?:[^|;&]*\s+)?(?:--force-with-lease|--force|-f\b)\s+\S+\s+(main|master|develop|release(/[^\s]+)?)'
+          - 'git\s+push\s+(?:[^|;&]*\s+)?\+(main|master|develop|release(/[^\s]+)?)'
+      - tool: Shell
+        any_command_regex: *git_force_push_regex
+      - tool_prefix: mcp_
+        any_command_regex: *git_force_push_regex
   evaluate:
     - kind: always
       action: deny
